@@ -37,7 +37,7 @@ const CancellationPolicy = () => {
         
         <Button 
           onClick={handleContinue}
-          className="w-full max-w-xs mt-8"
+          className="w-full max-w-xs mt-4 md:mt-8"
         >
           Proceed to the next step
         </Button>

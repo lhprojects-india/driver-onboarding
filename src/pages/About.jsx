@@ -39,7 +39,7 @@ const About = () => {
         
         <Button 
           onClick={handleContinue}
-          className="w-full max-w-xs mt-12"
+          className="w-full max-w-xs mt-6 md:mt-12"
         >
           Acknowledged
         </Button>

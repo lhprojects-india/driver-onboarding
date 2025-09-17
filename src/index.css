@@ -148,6 +148,6 @@
   }
 
   .laundryheap-page {
-    @apply min-h-screen w-full bg-laundryheap-blue text-white flex flex-col items-center px-6 pt-12 pb-6 animate-fade-in;
+    @apply min-h-screen w-full bg-laundryheap-blue text-white flex flex-col items-center px-4 md:px-6 pt-4 md:pt-12 pb-6 animate-fade-in;
   }
 }

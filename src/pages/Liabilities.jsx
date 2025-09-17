@@ -67,7 +67,7 @@ const Liabilities = () => {
             />
           </div>
           
-          <div className="mb-8">
+          <div className="mb-4 md:mb-8">
             <p className="text-center mb-4">
               Do you smoke?
             </p>

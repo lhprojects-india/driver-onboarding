@@ -49,7 +49,7 @@ const OnboardingStages = () => {
         
         <Button 
           onClick={handleContinue}
-          className="w-full max-w-xs mt-8"
+          className="w-full max-w-xs mt-4 md:mt-8"
         >
           Acknowledged
         </Button>

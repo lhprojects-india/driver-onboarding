@@ -44,7 +44,7 @@ const BlocksClassification = () => {
         
         <Button 
           onClick={handleContinue}
-          className="w-full max-w-xs mt-8"
+          className="w-full max-w-xs mt-4 md:mt-8"
         >
           I understand the densities and flexibility in scheduling
         </Button>

@@ -37,7 +37,7 @@ const Introduction = () => {
         </Button>
         </div>
       <div className="w-full flex flex-col items-center space-y-4">
-        <p className="text-center text-l my-12 max-w-xs animate-fade-in">
+        <p className="text-center text-l my-6 md:my-12 max-w-xs animate-fade-in">
           If you need further help in person, you can choose the following option to speak to a Fleet Agent.
         </p>
         <Button 

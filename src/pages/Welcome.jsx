@@ -51,7 +51,7 @@ const [email, setEmail] = useState("");
                 required
               />
               
-              <p className="text-center text-sm mt-6 mb-6 max-w-xs animate-fade-in">
+              <p className="text-center text-sm mt-4 md:mt-6 mb-4 md:mb-6 max-w-xs animate-fade-in">
                 Please enter your registered e-mail provided with your application
               </p>
       

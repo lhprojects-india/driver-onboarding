@@ -93,7 +93,7 @@ const Verification = () => {
         
         <Button 
           onClick={handleContinue}
-          className="w-full max-w-xs mt-8"
+          className="w-full max-w-xs mt-4 md:mt-8"
         >
           I confirm the authenticity of the details provided here
         </Button>

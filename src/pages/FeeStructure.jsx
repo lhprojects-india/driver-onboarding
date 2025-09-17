@@ -43,7 +43,7 @@ const FeeStructure = () => {
           </p>
         </div>
         
-        <div className="w-full flex flex-col items-center space-y-4 mt-8">
+        <div className="w-full flex flex-col items-center space-y-4 mt-4 md:mt-8">
           <Button 
             onClick={handleHappy}
             className="w-full max-w-xs"
