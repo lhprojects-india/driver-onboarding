@@ -237,7 +237,7 @@ export default function FacilityManager() {
               <CardHeader>
                 <CardTitle className="text-lg">{city}</CardTitle>
                 <CardDescription>
-                  {facilities[city].length} facility{facilities[city].length !== 1 ? 'ies' : ''}
+                  {facilities[city].length} {facilities[city].length !== 1 ? 'facilities' : 'facility'}
                 </CardDescription>
               </CardHeader>
               <CardContent>
