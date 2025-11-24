@@ -7,7 +7,7 @@ const About = () => {
   const navigate = useNavigate();
 
   const handleContinue = () => {
-    navigate("/onboarding-stages");
+    navigate("/role");
   };
 
   return (
@@ -17,23 +17,16 @@ const About = () => {
           About Laundryheap
         </h2>
         
+      
         <div className="text-center space-y-6 max-w-md animate-fade-in">
           <p>
-            Operating in 12 countries and 21 cities, we've amassed over 
-            150,000 downloads and fulfilled over 2 million orders.
+          Operating across 14 countries and 23 cities, we’ve achieved over 150,000 app downloads and successfully completed more than 2 million orders.
           </p>
-          
-          <p>
-            Laundryheap is the world's fastest laundry and dry cleaning 
-            service, with next-day delivery. Our customers find laundry 
-            easier than ever through our app or website, available 24/7.
+          <p>   
+Laundryheap is the world’s fastest laundry and dry-cleaning service, offering next-day delivery. Through our 24/7 app and website, customers can enjoy a seamless laundry experience anytime, anywhere.
           </p>
-          
           <p>
-            We provide peace of mind with round-the-clock service and 
-            dedicated customer support. Our drivers collect laundry from 
-            doorsteps and transport it to local facilities for washing, ensuring 
-            smooth deliveries within 24 hours.
+We deliver peace of mind with continuous service and dedicated customer support. Our professional drivers collect laundry directly from customers’ doorsteps and transport it to our trusted partner laundry facilities, ensuring efficient turnaround and delivery within 24 hours.
           </p>
         </div>
         

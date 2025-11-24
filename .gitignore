@@ -22,3 +22,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment variables
+.env
+.env.local
+
+# Firebase Service Account Keys (if you add them later)
+serviceAccountKey.json
+*-firebase-adminsdk-*.json
+
+# Downloaded documents from downloadDoc.js script
+downloads/
+backups/

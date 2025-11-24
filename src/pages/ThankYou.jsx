@@ -2,12 +2,17 @@
 import { useNavigate } from "react-router-dom";
 import PageLayout from "@/components/PageLayout";
 import Button from "@/components/Button";
+import { useAuth } from "@/context/AuthContext";
 
 const ThankYou = () => {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
 
-  const handleEndSession = () => {
-    navigate("/");
+  const handleEndSession = async () => {
+    // Sign out the user first
+    await signOut();
+    // Then navigate to home page
+    navigate("/", { replace: true });
   };
 
   return (
@@ -19,7 +24,7 @@ const ThankYou = () => {
           </h2>
           
           <p>
-            A Fleet agent will be connecting with you via a call very soon.
+           You will get a link for the AI call very soon.
           </p>
           
           <p className="mt-6 md:mt-12">
@@ -31,7 +36,7 @@ const ThankYou = () => {
           onClick={handleEndSession}
           className="w-full max-w-xs mt-6 md:mt-12"
         >
-          Save my progress and end session
+          End Session
         </Button>
       </div>
     </PageLayout>

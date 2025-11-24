@@ -1,62 +1,367 @@
 
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 import PageLayout from "@/components/PageLayout";
 import Button from "@/components/Button";
+import { Button as UIButton } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect } from "react";
+import { feeStructureServices, acknowledgementServices } from "@/lib/firebase-services";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { useMinimumReadTime } from "@/hooks/useMinimumReadTime";
 
 const FeeStructure = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { updateUserData, isLoading, currentUser } = useAuth();
+  const { toast } = useToast();
+  const [feeStructures, setFeeStructures] = useState(null);
+  const [loadingFeeStructures, setLoadingFeeStructures] = useState(true);
+  // Fee structure has more content, so require 45 seconds minimum read time
+  const { canProceed, timeRemaining } = useMinimumReadTime(45);
 
-  const handleHappy = () => {
+  // Default fee structure (fallback if no city-specific data is found)
+  // Using Birmingham as default
+  const defaultFeeStructure = {
+    city: "Birmingham",
+    currency: "£",
+    blocks: [
+      {
+        shiftLength: 4,
+        minimumFee: 56,
+        includedTasks: 11,
+        additionalTaskFee: 5.5,
+        density: "medium"
+      }
+    ],
+    averageHourlyEarnings: "£12.50–£18+",
+    averagePerTaskEarnings: "£4.50–£6.50"
+  };
+
+  // Fetch fee structures based on user's city
+  useEffect(() => {
+    const fetchFeeStructures = async () => {
+      try {
+        // Get city from user data (could be from fountainData or city field)
+        const city = currentUser?.fountainData?.city || currentUser?.city;
+        
+        console.log('🏙️ FeeStructure - Current User:', {
+          hasUser: !!currentUser,
+          fountainCity: currentUser?.fountainData?.city,
+          directCity: currentUser?.city,
+          selectedCity: city
+        });
+        
+        if (!city) {
+          console.warn('⚠️ No city found in user data, using default structure');
+          setFeeStructures(defaultFeeStructure);
+          setLoadingFeeStructures(false);
+          return;
+        }
+
+        console.log(`🔍 Fetching fee structures for: ${city}`);
+        const structures = await feeStructureServices.getFeeStructuresByCity(city);
+        
+        // If no structure found for the city, use default
+        if (!structures) {
+          console.warn(`⚠️ No fee structure found for ${city}, using default`);
+          setFeeStructures(defaultFeeStructure);
+        } else {
+          console.log(`✅ Fee structure loaded for ${city}:`, {
+            currency: structures.currency,
+            blocksCount: structures.blocks?.length,
+            blocks: structures.blocks
+          });
+          setFeeStructures(structures);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching fee structures:', error);
+        setFeeStructures(defaultFeeStructure);
+      } finally {
+        setLoadingFeeStructures(false);
+      }
+    };
+
+    if (currentUser) {
+      fetchFeeStructures();
+    } else {
+      console.log('⚠️ No current user, using default structure');
+      setFeeStructures(defaultFeeStructure);
+      setLoadingFeeStructures(false);
+    }
+  }, [currentUser]);
+
+  const handleHappy = async () => {
+    try {
+      const now = new Date().toISOString();
+      const dataToSave = {
+        feeStructureAcknowledged: true,
+        feeStructureAcknowledgedAt: now,
+        acknowledgedFeeStructure: true,
+        step: 'fee_structure'
+      };
+
+      // Attempt server-side immutable acknowledgement
+      const res = await acknowledgementServices.acknowledgeFeeStructure();
+      
+      // Always update local state regardless of which method was used
+      if (res.success) {
+        // Cloud function succeeded, update local state
+        await updateUserData(dataToSave);
+      } else {
+        // Fallback to client-side write
+        await updateUserData(dataToSave);
+      }
+
+      // If user came from summary, return to summary instead of continuing flow
+      if (searchParams.get('from') === 'summary') {
+        navigate("/acknowledgements-summary");
+      } else {
+        navigate("/how-route-works");
+      }
+    } catch (error) {
+      console.error("Error saving fee structure:", error);
+      toast({
+        title: "Save Failed",
+        description: "Unable to save acknowledgement. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleBackToBlocks = () => {
+    navigate("/blocks-classification");
+  };
+
+  const handleWithdraw = () => {
+    // For withdrawal, we just navigate to thank you page
+    // In a real app, you might want to mark the application as withdrawn in the database
     navigate("/thank-you");
   };
 
-  const handleNeedClarification = () => {
-    navigate("/thank-you");
+  // Helper function to get currency symbol
+  const getCurrency = () => {
+    if (!feeStructures) return '£';
+    return feeStructures.currency || '£';
   };
+
+  // Calculate example earnings
+  const calculateExample = (block) => {
+    if (!block) return null;
+    
+    const extraTasks = 5;
+    const totalTasks = block.includedTasks + extraTasks;
+    const extraEarnings = extraTasks * block.additionalTaskFee;
+    const totalEarnings = block.minimumFee + extraEarnings;
+    
+    return {
+      extraTasks,
+      totalTasks,
+      extraEarnings: extraEarnings.toFixed(2),
+      totalEarnings: totalEarnings.toFixed(2)
+    };
+  };
+
+  const currency = getCurrency();
+  
+  // Get all blocks sorted by density (low, medium, high)
+  const getAllBlocks = () => {
+    if (!feeStructures?.blocks) return [];
+    
+    const densityOrder = { 'low': 1, 'medium': 2, 'high': 3 };
+    return [...feeStructures.blocks].sort((a, b) => {
+      const orderA = densityOrder[a.density] || 999;
+      const orderB = densityOrder[b.density] || 999;
+      return orderA - orderB;
+    });
+  };
+  
+  const allBlocks = getAllBlocks();
+
+  // Loading state
+  if (loadingFeeStructures) {
+    return (
+      <PageLayout compact title="">
+        <div className="w-full flex flex-col items-center px-4">
+          <h2 className="text-center text-3xl font-bold mb-6">Fee Structure</h2>
+          <Card className="w-full max-w-2xl">
+            <CardContent className="p-6">
+              <p className="text-center text-muted-foreground">Loading fee information...</p>
+            </CardContent>
+          </Card>
+        </div>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout compact title="">
-      <div className="w-full flex flex-col items-center">
-        <h2 className="text-center text-3xl font-bold mb-6 animate-slide-down">
-          Fee structure
-        </h2>
-        
-        <div className="text-center space-y-6 max-w-md animate-fade-in">
-          <p>
-            Pay per task policy - The more number of tasks completed, the higher the earning potential.
-          </p>
-          
-          <p>
-            For the City of Dublin, our widely available blocks are 4-hour blocks, either medium or low density.
-          </p>
-          
-          <p>
-            4 hour Medium density blocks are offered with a fee of €65 inclusive of mileage, with 12 minimum/included tasks. An extra task fee of €5.7 per task completed after the 12th task
-          </p>
-          
-          <p>
-            4 hour low-density blocks are offered with a fee of €70 inclusive of mileage, with 11 minimum/included tasks. An extra task fee of €6.7 per task completed after the 11th task
-          </p>
-          
-          <p>
-            We also offer blocks with more combinations of 3 and hours with high, medium, and low densities. Our Fleet associate will reach out to you once this session is complete.
-          </p>
+      <div className="w-full flex flex-col items-center px-4">
+        <h2 className="text-center text-3xl font-bold mb-6 animate-fade-in">Fee Structure</h2>
+
+        <div className="grid w-full max-w-4xl gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>How your pay works</CardTitle>
+              <CardDescription>
+                Clear minimums, predictable extras, and transparent examples.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p>
+                Every delivery block (3, 4, or 5 hours) comes with a <strong>guaranteed minimum fee</strong>.
+              </p>
+              <p>
+                Even if there are fewer tasks on a given day, you&apos;ll still receive this full minimum amount.
+              </p>
+              <p>
+                If you complete more than the included number of tasks, you&apos;ll earn extra pay for each additional task — the busier it is, the more you make.
+              </p>
+              <p className="font-medium">
+                Only successfully completed tasks count toward your pay. Tasks that are failed or not delivered/picked up are not paid.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Block overview intentionally omitted as requested */}
+
+          {allBlocks.length > 0 ? (
+            <>
+              <div className="col-span-full">
+                <h3 className="text-xl font-semibold mb-4">Examples by Density</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  See how minimum + extra tasks add up for different route densities.
+                </p>
+              </div>
+              
+              {allBlocks.map((block, index) => {
+                const example = calculateExample(block);
+                const densityColors = {
+                  'low': 'border-blue-200',
+                  'medium': 'border-yellow-200',
+                  'high': 'border-green-200'
+                };
+                const borderColor = densityColors[block.density] || 'border-blue-200';
+                
+                return (
+                  <Card key={index} className={borderColor}>
+                    <CardHeader>
+                      <CardTitle className="capitalize">
+                        {block.density ? `${block.density} Density` : 'Standard'} - {block.shiftLength}-hour block
+                      </CardTitle>
+                      <CardDescription>See how minimum + extra tasks add up.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div className="rounded-md border p-4">
+                          <div className="text-sm text-muted-foreground">Minimum fee</div>
+                          <div className="text-2xl font-semibold">{currency}{block.minimumFee}</div>
+                        </div>
+                        <div className="rounded-md border p-4">
+                          <div className="text-sm text-muted-foreground">Included tasks</div>
+                          <div className="text-2xl font-semibold">{block.includedTasks}</div>
+                        </div>
+                        <div className="rounded-md border p-4">
+                          <div className="text-sm text-muted-foreground">Extra per task</div>
+                          <div className="text-2xl font-semibold">{currency}{block.additionalTaskFee}</div>
+                        </div>
+                      </div>
+                      {example && (
+                        <div className="rounded-md bg-muted border p-4">
+                          <p>
+                            If you complete <strong>{example.totalTasks} tasks</strong> ({example.extraTasks} extra × {currency}{block.additionalTaskFee}), your total becomes
+                            {" "}
+                            <strong className="text-yellow-200">{currency}{example.totalEarnings}</strong>.
+                          </p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </>
+          ) : null}
+
+          <Card>
+            <CardHeader>
+              <CardTitle>What to expect</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3">
+              <div className="rounded-md border p-4">
+                <span className="font-medium">Guaranteed minimum:</span> You&apos;re always paid for the block you commit to.
+              </div>
+              <div className="rounded-md border p-4">
+                <span className="font-medium">Extra earnings:</span> More tasks = more pay.
+              </div>
+              <div className="rounded-md border p-4">
+                <span className="font-medium">Average hourly earnings:</span> {feeStructures?.averageHourlyEarnings || '£14–£20+'}
+              </div>
+              <div className="rounded-md border p-4">
+                <span className="font-medium">Average per-task earnings:</span> {feeStructures?.averagePerTaskEarnings || '£4.50–£6.50'}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-green-300">
+            <CardContent className="p-6">
+              <p>
+                💡 You&apos;re always covered with a <strong>guaranteed minimum fee</strong> — and any extra work means extra income on top of that.
+              </p>
+            </CardContent>
+          </Card>
         </div>
-        
-        <div className="w-full flex flex-col items-center space-y-4 mt-4 md:mt-8">
-          <Button 
-            onClick={handleHappy}
-            className="w-full max-w-xs"
-          >
-            I'm happy with the paystructure
-          </Button>
-          
-          <Button 
-            onClick={handleNeedClarification}
-            className="w-full max-w-xs"
-          >
-            I need further clarification
-          </Button>
+
+        <div className="w-full flex flex-col items-center mt-8 md:mt-10">
+          {searchParams.get('from') !== 'summary' && (
+            <div className="w-full max-w-md text-center mb-6">
+              <p className="text-sm text-muted-foreground mb-2">Want to revisit the block classes?</p>
+              <button
+                onClick={handleBackToBlocks}
+                className="text-blue-600 hover:text-blue-800 underline text-sm font-medium"
+                disabled={isLoading}
+              >
+                Back to Block Classification
+              </button>
+            </div>
+          )}
+
+          {searchParams.get('from') !== 'summary' && !canProceed && (
+            <div className="w-full max-w-xl text-center mb-4">
+              <p className="text-sm text-muted-foreground">
+                Please read the fee structure carefully. You can continue in {timeRemaining} second{timeRemaining !== 1 ? 's' : ''}.
+              </p>
+            </div>
+          )}
+          {searchParams.get('from') === 'summary' ? (
+            <div className="w-full max-w-xl mb-4">
+              <UIButton
+                onClick={() => navigate("/acknowledgements-summary")}
+                className="w-full"
+                variant="outline"
+                disabled={isLoading || loadingFeeStructures}
+              >
+                Back to Summary
+              </UIButton>
+            </div>
+          ) : (
+            <div className="flex w-full max-w-xl flex-col gap-3 sm:flex-row sm:justify-center">
+              <Button
+                onClick={handleHappy}
+                className="w-full sm:w-auto"
+                disabled={isLoading || loadingFeeStructures || !canProceed}
+              >
+                {isLoading ? "Completing..." : "I'm Happy with the Pay Structure"}
+              </Button>
+              <Button
+                onClick={handleWithdraw}
+                className="w-full sm:w-auto"
+                variant="outline"
+                disabled={isLoading}
+              >
+                Withdraw my Application
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </PageLayout>

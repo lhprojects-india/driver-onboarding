@@ -1,50 +1,39 @@
-
 import { useNavigate } from "react-router-dom";
 import PageLayout from "@/components/PageLayout";
 import Button from "@/components/Button";
+import { useSaveProgress } from "@/hooks/useSaveProgress";
 
 const Introduction = () => {
   const navigate = useNavigate();
+  useSaveProgress(); // Automatically save progress when user visits this page
 
-  const handleContinueAutomated = () => {
+  const handleContinue = () => {
     navigate("/about");
-  };
-
-  const handleContactFleetAgent = () => {
-    navigate("/fleet-agent");
   };
 
   return (
     <PageLayout className="flex flex-col items-center space-y-4"
       title="Hi there!"
-      subtitle="Welcome to your introductory training session. Here you will understand the following things which would give you a fair idea of how things work at Laundryheap.This would take you 10-15 minutes to complete."
+      subtitle="Welcome to your introductory training session. In this module, you'll get a clear overview of how things work at Laundryheap. Completing this section will take approximately 10–15 minutes."
     >
       <div className="w-full flex flex-col items-center space-y-4">
-        <p className="text-center text-l my-2 max-w-xs animate-fade-in">
+        <div className="text-center text-l my-2 max-w-xs animate-fade-in">
+          <p className="font-semibold mb-2">Things Covered:</p>
           <ul className="list-disc list-inside text-left">
-            <li>About the company</li>
-            <li>Timings</li>
-            <li>Liabilities</li>
-            <li>Fee Structure</li>
+            <li>About the Company</li>
+            <li>Onboarding Stages</li>
+            <li>Role Explanation</li>
             <li>Availability</li>
+            <li>Fee Structure</li>
+            <li>Cancellation Policy</li>
+            <li>Liability</li>
           </ul>
-        </p>
+        </div>
         <Button 
-          onClick={handleContinueAutomated}
+          onClick={handleContinue}
           className="w-full max-w-xs"
         >
           Continue
-        </Button>
-        </div>
-      <div className="w-full flex flex-col items-center space-y-4">
-        <p className="text-center text-l my-6 md:my-12 max-w-xs animate-fade-in">
-          If you need further help in person, you can choose the following option to speak to a Fleet Agent.
-        </p>
-        <Button 
-          onClick={handleContactFleetAgent}
-          className="w-full max-w-xs"
-        >
-          Speak to a Fleet Agent
         </Button>
       </div>
     </PageLayout>

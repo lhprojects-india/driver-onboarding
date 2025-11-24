@@ -8,16 +8,22 @@ function Input({
   required = false,
   id,
   className = "",
+  disabled = false,
 }) {
+  // Provide a no-op onChange handler for disabled/readOnly inputs to avoid React warnings
+  const handleChange = disabled ? () => {} : onChange;
+  
   return (
     <div className="input-container">
       <input
         id={id}
         type={type}
         value={value}
-        onChange={onChange}
+        onChange={handleChange}
         placeholder={placeholder}
         required={required}
+        disabled={disabled}
+        readOnly={disabled}
         className={`laundryheap-input ${className}`}
       />
       {required && (

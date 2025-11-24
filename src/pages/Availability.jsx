@@ -1,14 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import PageLayout from "@/components/PageLayout";
 import Button from "@/components/Button";
 import AvailabilityGrid from "@/components/AvailabilityGrid";
+import { useSaveProgress } from "@/hooks/useSaveProgress";
 
 const Availability = () => {
   const navigate = useNavigate();
-  const { updateUserData } = useAuth();
-  
+  const { currentUser, saveAvailability, isLoading } = useAuth();
+  useSaveProgress(); // Automatically save progress when user visits this page
+  const [isSaving, setIsSaving] = useState(false);
+
   const [availability, setAvailability] = useState({
     Mondays: { noon: false, evening: false },
     Tuesdays: { noon: false, evening: false },
@@ -18,14 +21,39 @@ const Availability = () => {
     Saturdays: { noon: false, evening: false },
   });
 
-  const handleContinue = () => {
-    updateUserData({ availability });
-    navigate("/role");
+  // Load existing availability data
+  useEffect(() => {
+    if (currentUser?.availability) {
+      setAvailability(currentUser.availability);
+    }
+  }, [currentUser]);
+
+  const handleContinue = async () => {
+    setIsSaving(true);
+    try {
+      const success = await saveAvailability(availability);
+      if (success) {
+        navigate("/facility-locations");
+      }
+    } catch (error) {
+      console.error("Error saving availability:", error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleAvailabilityChange = (newAvailability) => {
     setAvailability(newAvailability);
   };
+
+  // Check if at least one availability slot is selected
+  const hasAtLeastOneSelection = () => {
+    return Object.values(availability).some(
+      (day) => day.noon === true || day.evening === true
+    );
+  };
+
+  const isButtonDisabled = !hasAtLeastOneSelection() || isSaving || isLoading;
 
   return (
     <PageLayout compact title="">
@@ -49,11 +77,18 @@ const Availability = () => {
           />
         </div>
         
-        <Button 
+        {!hasAtLeastOneSelection() && (
+          <p className="text-center text-sm text-red-500 mt-4">
+            Please select at least one availability slot to continue
+          </p>
+        )}
+        
+        <Button
           onClick={handleContinue}
           className="w-full max-w-xs mt-4 md:mt-8"
+          disabled={isButtonDisabled}
         >
-          I confirm my weekly availability
+          {isSaving ? "Saving..." : "I confirm my weekly availability"}
         </Button>
       </div>
     </PageLayout>

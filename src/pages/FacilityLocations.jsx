@@ -1,0 +1,202 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
+import PageLayout from "@/components/PageLayout";
+import Button from "@/components/Button";
+import CheckboxWithLabel from "@/components/CheckboxWithLabel";
+import { useToast } from "@/hooks/use-toast";
+import { useSaveProgress } from "@/hooks/useSaveProgress";
+import { facilityServices } from "@/lib/firebase-services";
+
+const FacilityLocations = () => {
+  const navigate = useNavigate();
+  const { currentUser, updateUserData, isLoading } = useAuth();
+  const { toast } = useToast();
+  useSaveProgress(); // Automatically save progress when user visits this page
+  const [isSaving, setIsSaving] = useState(false);
+  const [selectedFacilities, setSelectedFacilities] = useState([]);
+  const [cityFacilities, setCityFacilities] = useState([]);
+  const [loadingFacilities, setLoadingFacilities] = useState(true);
+
+  // Fetch facilities based on user's city from database
+  useEffect(() => {
+    const fetchFacilities = async () => {
+      if (!currentUser) {
+        setLoadingFacilities(false);
+        return;
+      }
+
+      // Get city from user data (similar to FeeStructure page)
+      const city = currentUser?.fountainData?.city || currentUser?.city;
+      
+      console.log('🏙️ FacilityLocations - Current User:', {
+        hasUser: !!currentUser,
+        fountainCity: currentUser?.fountainData?.city,
+        directCity: currentUser?.city,
+        selectedCity: city
+      });
+
+      if (!city) {
+        console.warn('⚠️ No city found in user data');
+        setCityFacilities([]);
+        setLoadingFacilities(false);
+        return;
+      }
+
+      setLoadingFacilities(true);
+      try {
+        console.log(`🔍 Fetching facilities for: ${city}`);
+        const facilities = await facilityServices.getFacilitiesByCity(city);
+        
+        console.log(`✅ Found ${facilities.length} facilities for ${city}:`, facilities);
+        setCityFacilities(facilities);
+
+        // Load existing facility selections if available
+        if (currentUser?.selectedFacilities) {
+          setSelectedFacilities(currentUser.selectedFacilities);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching facilities:', error);
+        setCityFacilities([]);
+      } finally {
+        setLoadingFacilities(false);
+      }
+    };
+
+    fetchFacilities();
+  }, [currentUser]);
+
+  const handleFacilityToggle = (facilityCode) => {
+    setSelectedFacilities(prev => {
+      if (prev.includes(facilityCode)) {
+        return prev.filter(code => code !== facilityCode);
+      } else {
+        return [...prev, facilityCode];
+      }
+    });
+  };
+
+  const handleContinue = async () => {
+    if (selectedFacilities.length === 0) {
+      toast({
+        title: "Selection Required",
+        description: "Please select at least one facility location you're comfortable with.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const success = await updateUserData({
+        selectedFacilities: selectedFacilities,
+        facilityLocationsAcknowledged: true,
+        facilityLocationsAcknowledgedAt: new Date().toISOString(),
+        step: 'facility_locations'
+      });
+
+      if (success) {
+        navigate("/blocks-classification");
+      }
+    } catch (error) {
+      console.error("Error saving facility locations:", error);
+      toast({
+        title: "Save Failed",
+        description: "Unable to save facility selections. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Show loading state
+  if (loadingFacilities) {
+    return (
+      <PageLayout compact title="">
+        <div className="w-full flex flex-col items-center">
+          <h2 className="text-center text-3xl font-bold mb-6 animate-slide-down">
+            Facility Locations
+          </h2>
+          <div className="w-full max-w-md animate-fade-in">
+            <p className="text-center text-muted-foreground">
+              Loading facility information...
+            </p>
+          </div>
+        </div>
+      </PageLayout>
+    );
+  }
+
+  // Show message if no facilities found
+  if (cityFacilities.length === 0 && currentUser && !loadingFacilities) {
+    const city = currentUser?.fountainData?.city || currentUser?.city;
+    return (
+      <PageLayout compact title="">
+        <div className="w-full flex flex-col items-center">
+          <h2 className="text-center text-3xl font-bold mb-6 animate-slide-down">
+            Facility Locations
+          </h2>
+          <div className="w-full max-w-md animate-fade-in">
+            {city ? (
+              <p className="text-center text-muted-foreground">
+                No facilities found for {city}. Please contact support.
+              </p>
+            ) : (
+              <p className="text-center text-muted-foreground">
+                Unable to load facility information. Please try again.
+              </p>
+            )}
+          </div>
+        </div>
+      </PageLayout>
+    );
+  }
+
+  return (
+    <PageLayout compact title="">
+      <div className="w-full flex flex-col items-center">
+        <h2 className="text-center text-3xl font-bold mb-6 animate-slide-down">
+          Facility Locations
+        </h2>
+        
+        <div className="w-full max-w-md animate-fade-in">
+          <p className="text-center mb-6">
+            Please select the facility locations you're comfortable working with in your city.
+          </p>
+          
+          <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 max-h-[500px] overflow-y-auto mb-6">
+            <div className="space-y-4">
+              {cityFacilities.map((facility, index) => (
+                <div key={index} className="border-b border-gray-200 pb-4 last:border-b-0 last:pb-0">
+                  <CheckboxWithLabel
+                    label={`${facility.Facility} - ${facility.Address}`}
+                    checked={selectedFacilities.includes(facility.Facility)}
+                    onChange={() => handleFacilityToggle(facility.Facility)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {selectedFacilities.length === 0 && (
+            <p className="text-center text-sm text-red-500 mt-4">
+              Please select at least one facility location to continue
+            </p>
+          )}
+        </div>
+        
+        <Button
+          onClick={handleContinue}
+          className="w-full max-w-xs mt-4 md:mt-8"
+          disabled={selectedFacilities.length === 0 || isSaving || isLoading}
+        >
+          {isSaving ? "Saving..." : "Continue"}
+        </Button>
+      </div>
+    </PageLayout>
+  );
+};
+
+export default FacilityLocations;
+

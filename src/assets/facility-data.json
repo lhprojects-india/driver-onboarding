@@ -1,0 +1,182 @@
+[
+  {
+    "City": "Manchester",
+    "Facility": "CRT",
+    "Address": "13, Holcombe Precinct, Longsight Rd, Holcombe Brook, Ramsbottom, Bury BL0 9SH"
+  },
+  {
+    "City": "Manchester",
+    "Facility": "TED",
+    "Address": "1 St Ann’s Parade, Wilmslow SK9 1HG, United Kingdom"
+  },
+  {
+    "City": "Birmingham",
+    "Facility": "BIR",
+    "Address": "455-457 Bearwood Road Smethwick, England B66 4DH"
+  },
+  {
+    "City": "Birmingham",
+    "Facility": "RAF",
+    "Address": "3 villiers Ave, Bilston wv14 6QN"
+  },
+  {
+    "City": "Amsterdam",
+    "Facility": "DRO",
+    "Address": "Droog cleaning Service, Curiestraat 2, 1098 RT Amsterdam, Netherlands"
+  },
+  {
+    "City": "Amsterdam",
+    "Facility": "QDC",
+    "Address": "Sierplein 48, 1065 LN Amsterdam, Netherlands"
+  },
+  {
+    "City": "Copenhagen",
+    "Facility": "REN",
+    "Address": "Borgergade, 18, DK 1300 Copenhagen K"
+  },
+  {
+    "City": "London",
+    "Facility": "ATZ",
+    "Address": "6 Clunbury St, London N1 6TT, United Kingdom"
+  },
+  {
+    "City": "London",
+    "Facility": "CRD",
+    "Address": "98a Crown Lane, London N14 5EN"
+  },
+  {
+    "City": "London",
+    "Facility": "DRP",
+    "Address": "Holborn.London, 69 Grays Inn Road,WC1X 8TP"
+  },
+  {
+    "City": "London",
+    "Facility": "EDC",
+    "Address": "67 Approach Road, London, SW20 8BA, United Kingdom"
+  },
+  {
+    "City": "London",
+    "Facility": "GSD",
+    "Address": "1E St Marks Industrial Estate, E16 2BS, London"
+  },
+  {
+    "City": "London",
+    "Facility": "LAV",
+    "Address": "268 Southwark Park Rd., London SE16 3RN"
+  },
+  {
+    "City": "London",
+    "Facility": "LEW",
+    "Address": "189 Lewisham Way, London SE4 1UY, United Kingdom"
+  },
+  {
+    "City": "London",
+    "Facility": "LUX",
+    "Address": "15-17 Grange Mills Weir Road, Balham, SW120NE"
+  },
+  {
+    "City": "London",
+    "Facility": "ODC",
+    "Address": "Oceana Dry Cleaners,84 High Street Teddington, England TW11 8JD"
+  },
+  {
+    "City": "London",
+    "Facility": "OLD",
+    "Address": "98 Old street, London EC1V 9AY"
+  },
+  {
+    "City": "London",
+    "Facility": "OMC",
+    "Address": "7 Church road, Stanmore, London, HA7 4AR"
+  },
+  {
+    "City": "London",
+    "Facility": "TO",
+    "Address": "Heritage tooting-18 Tooting Bec Road, London, England SW17 8BD"
+  },
+  {
+    "City": "London",
+    "Facility": "WRS",
+    "Address": "Europa House, Hanger Lane, London W5 1DP"
+  },
+  {
+    "City": "Singapore",
+    "Facility": "AGP",
+    "Address": "16 Gambas Cres, Level 2 Nordcom II, Singapore 757006"
+  },
+  {
+    "City": "Singapore",
+    "Facility": "PGS",
+    "Address": "Piing! 2 Woodlands Sector 1, #01-13 WOODLANDS SPECTRUM, Singapore 738068"
+  },
+  {
+    "City": "Singapore",
+    "Facility": "SYS",
+    "Address": "Systematic Laundry, 6 Woodlands Lp., Singapore 738346"
+  },
+  {
+    "City": "Singapore",
+    "Facility": "WSH",
+    "Address": "New Sparklean Laundry Pte Ltd, 1009 Tai Seng Ave, #01-2640, Singapore 534418"
+  },
+  {
+    "City": "New York",
+    "Facility": "AMB",
+    "Address": "693 Flatbush ave Brooklyn"
+  },
+  {
+    "City": "New York",
+    "Facility": "FLD",
+    "Address": "325 1st Ave, New York, NY 10003"
+  },
+  {
+    "City": "New York",
+    "Facility": "SOP",
+    "Address": "Sophie's Laundry, 836 W 181st St, New York, NY 10033, United States"
+  },
+  {
+    "City": "Miami",
+    "Facility": "MWF",
+    "Address": "Miami Wash and Fold Coin Laundry, 2200 SW 16th St # 108, Miami, FL 33145, United States"
+  },
+  {
+    "City": "San Fransisco",
+    "Facility": "ARA",
+    "Address": "1233 Divisadero St, San Francisco, CA 94115, United States"
+  },
+  {
+    "City": "San Fransisco",
+    "Facility": "ESF",
+    "Address": "4721 Geary Blvd, San Francisco, CA 94118, USA"
+  },
+  {
+    "City": "Boston",
+    "Facility": "MND",
+    "Address": "Mondy Cleaners & Laundry, 144 Tremont Street Brighton MA, 02135"
+  },
+  {
+    "City": "Chicago",
+    "Facility": "XPS",
+    "Address": "3026 S Halsted St, Chicago, IL 60608"
+  },
+  {
+    "City": "Dublin",
+    "Facility": "BRW",
+    "Address": "26 Aungier St, Dublin 2, Ireland"
+  },
+  {
+    "City": "Dublin",
+    "Facility": "SDC",
+    "Address": "Southern Link Business Park, Unit D8, Newbridge Rd, Naas, Co. Kildare, Ireland"
+  },
+  {
+    "City": "Los Angeles",
+    "Facility": "BLV",
+    "Address": "1530 S LA CIENAGA BLVD, LOS ANGELES, CA 90035"
+  },
+  {
+    "City": "Los Angeles",
+    "Facility": "LAL",
+    "Address": "1410 W 6th St, Los Angeles, CA 90017, United States"
+  }
+]

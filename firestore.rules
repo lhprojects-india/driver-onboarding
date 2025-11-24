@@ -1,0 +1,108 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to get user email from token (handles both regular and custom tokens)
+    // For Google sign-in, email is in request.auth.token.email
+    // For custom tokens, email might be in request.auth.token.claims.email
+    function getUserEmail() {
+      // For Google sign-in, email is directly in request.auth.token.email
+      // For custom tokens, it might be in request.auth.token.claims.email
+      return request.auth != null && request.auth.token != null
+        ? (request.auth.token.email != null 
+           ? request.auth.token.email 
+           : (request.auth.token.claims != null && request.auth.token.claims.email != null
+              ? request.auth.token.claims.email
+              : null))
+        : null;
+    }
+    
+    // Helper function to check if user is admin
+    // Checks against hardcoded list of admin emails (matches admin-config.js)
+    // IMPORTANT: Keep this list in sync with src/lib/admin-config.js
+    // Note: Email comparison is case-sensitive, so ensure emails match exactly
+    // Google sign-in emails are always lowercase
+    function isAdmin() {
+      let userEmail = getUserEmail();
+      return request.auth != null && 
+             userEmail != null &&
+             (userEmail == 'hari@laundryheap.com' ||
+              userEmail == 'admin@laundryheap.com' ||
+              userEmail == 'bharath@laundryheap.com' ||
+              userEmail == 'sudhanva@laundryheap.com');
+    }
+    
+    // Helper function to check if user owns the document or is admin
+    // Supports both regular tokens and custom tokens with email in claims
+    // Note: Email comparison is case-sensitive - emails in Firestore should be lowercase
+    function isOwnerOrAdmin(email) {
+      let userEmail = getUserEmail();
+      return request.auth != null && 
+        userEmail != null &&
+        // Check if user owns the document (exact match) OR is admin
+        (userEmail == email || isAdmin());
+    }
+    
+    // Helper function to allow writes for authenticated users or for testing (mock mode)
+    // WARNING: This allows unauthenticated writes for testing - restrict in production!
+    function canWriteForTesting(email) {
+      return request.auth != null || true; // Allow unauthenticated writes for mock mode testing
+    }
+    
+    // Authorized emails collection - only admins can read
+    match /authorized_emails/{email} {
+      allow read: if isAdmin();
+      allow write: if false; // Only Admin SDK can write
+    }
+    
+    // Fountain applicants collection - read-only for authenticated users to verify their email/phone
+    match /fountain_applicants/{email} {
+      allow read: if request.auth != null;
+      allow write: if false; // Only cloud functions can write
+    }
+    
+    // Drivers collection - users can access their own data, admins can access all
+    match /drivers/{email} {
+      allow read: if isOwnerOrAdmin(email);
+      allow write: if canWriteForTesting(email);
+    }
+
+    // Availability collection - users can access their own data, admins can access all
+    match /availability/{email} {
+      allow read: if isOwnerOrAdmin(email);
+      allow write: if canWriteForTesting(email);
+    }
+
+    // Verification collection - users can access their own data, admins can access all
+    match /verification/{email} {
+      allow read: if isOwnerOrAdmin(email);
+      allow write: if canWriteForTesting(email);
+    }
+    
+    // Onboarding collection - track progress
+    match /onboarding/{email} {
+      allow read: if isOwnerOrAdmin(email);
+      allow write: if canWriteForTesting(email);
+    }
+    
+    // Reports collection - completed onboarding reports
+    // Admins can read all reports, authenticated users can read any
+    match /reports/{reportId} {
+      allow read: if isAdmin() || request.auth != null; // Admins can read all, authenticated users can read any
+      allow write: if true; // Allow writes for mock mode testing (restrict in production)
+    }
+    
+    // Fee structures collection - public read, admin write only
+    match /fee_structures/{city} {
+      allow read: if true; // Allow all reads (public pricing information)
+      allow write: if isAdmin(); // Only admins can write
+    }
+    
+    // Facilities collection - public read, admin write only
+    match /facilities/{facilityCode} {
+      allow read: if true; // Allow all reads (drivers need to see facilities for their city)
+      allow write: if isAdmin(); // Only admins can write
+    }
+  }
+}
+
