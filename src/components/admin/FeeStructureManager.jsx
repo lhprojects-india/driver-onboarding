@@ -248,6 +248,7 @@ export default function FeeStructureManager() {
                       <SelectItem value="£">£ (GBP)</SelectItem>
                       <SelectItem value="$">$ (USD)</SelectItem>
                       <SelectItem value="€">€ (EUR)</SelectItem>
+                      <SelectItem value="$">(SGD)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
