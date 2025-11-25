@@ -11,6 +11,40 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from "../../hooks/use-toast";
 import { Plus, Edit, Trash2, Save, X, FileText } from "lucide-react";
 
+// Currency mapping: code -> symbol
+const CURRENCY_MAP = {
+  'GBP': '£',
+  'USD': '$',
+  'EUR': '€',
+  'SGD': '$'
+};
+
+// Reverse mapping: symbol -> code (for backward compatibility)
+const SYMBOL_TO_CODE = {
+  '£': 'GBP',
+  '$': 'USD', // Default to USD for backward compatibility
+  '€': 'EUR'
+};
+
+// Helper to convert currency code to symbol
+const getCurrencySymbol = (code) => {
+  return CURRENCY_MAP[code] || code;
+};
+
+// Helper to normalize currency (handle both old symbol format and new code format)
+const normalizeCurrency = (currency) => {
+  // If it's already a symbol, convert to code for internal use
+  if (CURRENCY_MAP[currency]) {
+    return currency; // Already a code
+  }
+  return SYMBOL_TO_CODE[currency] || 'GBP'; // Convert symbol to code, default to GBP
+};
+
+// Helper to get display currency (always return symbol)
+const getDisplayCurrency = (currency) => {
+  return getCurrencySymbol(normalizeCurrency(currency));
+};
+
 export default function FeeStructureManager() {
   const { toast } = useToast();
   const [feeStructures, setFeeStructures] = useState({});
@@ -19,7 +53,7 @@ export default function FeeStructureManager() {
   const [editingCity, setEditingCity] = useState(null);
   const [formData, setFormData] = useState({
     city: '',
-    currency: '£',
+    currency: 'GBP', // Store as code internally
     blocks: [
       {
         shiftLength: 4,
@@ -57,7 +91,7 @@ export default function FeeStructureManager() {
   const handleCreateNew = () => {
     setFormData({
       city: '',
-      currency: '£',
+      currency: 'GBP',
       blocks: [
         {
           shiftLength: 4,
@@ -77,7 +111,7 @@ export default function FeeStructureManager() {
   const handleEdit = (cityId, structure) => {
     setFormData({
       city: structure.city,
-      currency: structure.currency,
+      currency: normalizeCurrency(structure.currency), // Normalize to code format
       blocks: structure.blocks || [],
       averageHourlyEarnings: structure.averageHourlyEarnings || '',
       averagePerTaskEarnings: structure.averagePerTaskEarnings || ''
@@ -106,7 +140,13 @@ export default function FeeStructureManager() {
         return;
       }
 
-      const success = await adminServices.setFeeStructure(formData.city, formData);
+      // Convert currency code to symbol before saving (for backward compatibility)
+      const dataToSave = {
+        ...formData,
+        currency: getCurrencySymbol(formData.currency)
+      };
+
+      const success = await adminServices.setFeeStructure(dataToSave.city, dataToSave);
       if (success) {
         toast({
           title: "Fee structure saved",
@@ -186,6 +226,76 @@ export default function FeeStructureManager() {
     }));
   };
 
+  // Calculate average hourly earnings from blocks
+  const calculateAverageHourlyEarnings = (blocks, currencyCode) => {
+    if (!blocks || blocks.length === 0) return '';
+    
+    const currencySymbol = getCurrencySymbol(currencyCode);
+    const hourlyRates = blocks.map(block => {
+      if (!block.shiftLength || block.shiftLength === 0) return null;
+      const baseHourly = block.minimumFee / block.shiftLength;
+      // Estimate max hourly with some extra tasks (assume 50% more tasks than included)
+      const estimatedExtraTasks = Math.ceil(block.includedTasks * 0.5);
+      const maxHourly = (block.minimumFee + (estimatedExtraTasks * block.additionalTaskFee)) / block.shiftLength;
+      return { min: baseHourly, max: maxHourly };
+    }).filter(Boolean);
+
+    if (hourlyRates.length === 0) return '';
+
+    const minAvg = hourlyRates.reduce((sum, rate) => sum + rate.min, 0) / hourlyRates.length;
+    const maxAvg = hourlyRates.reduce((sum, rate) => sum + rate.max, 0) / hourlyRates.length;
+
+    return `${currencySymbol}${minAvg.toFixed(2)}–${currencySymbol}${maxAvg.toFixed(2)}+`;
+  };
+
+  // Calculate average per task earnings from blocks
+  const calculateAveragePerTaskEarnings = (blocks, currencyCode) => {
+    if (!blocks || blocks.length === 0) return '';
+    
+    const currencySymbol = getCurrencySymbol(currencyCode);
+    const taskRates = blocks.map(block => {
+      if (!block.includedTasks || block.includedTasks === 0) return null;
+      const minPerTask = block.minimumFee / block.includedTasks;
+      const maxPerTask = block.additionalTaskFee; // Extra tasks pay this rate
+      return { min: minPerTask, max: maxPerTask };
+    }).filter(Boolean);
+
+    if (taskRates.length === 0) return '';
+
+    const minAvg = taskRates.reduce((sum, rate) => sum + rate.min, 0) / taskRates.length;
+    const maxAvg = taskRates.reduce((sum, rate) => sum + rate.max, 0) / taskRates.length;
+
+    return `${currencySymbol}${minAvg.toFixed(2)}–${currencySymbol}${maxAvg.toFixed(2)}`;
+  };
+
+  // Auto-calculate earnings when blocks or currency change
+  useEffect(() => {
+    if (formData.blocks && formData.blocks.length > 0) {
+      const calculatedHourly = calculateAverageHourlyEarnings(formData.blocks, formData.currency);
+      const calculatedPerTask = calculateAveragePerTaskEarnings(formData.blocks, formData.currency);
+      
+      // Only update if values have changed to avoid unnecessary re-renders
+      setFormData(prev => {
+        if (prev.averageHourlyEarnings === calculatedHourly && 
+            prev.averagePerTaskEarnings === calculatedPerTask) {
+          return prev; // No change needed
+        }
+        return {
+          ...prev,
+          averageHourlyEarnings: calculatedHourly,
+          averagePerTaskEarnings: calculatedPerTask
+        };
+      });
+    } else {
+      // Clear earnings if no blocks
+      setFormData(prev => ({
+        ...prev,
+        averageHourlyEarnings: '',
+        averagePerTaskEarnings: ''
+      }));
+    }
+  }, [formData.blocks, formData.currency]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -242,37 +352,15 @@ export default function FeeStructureManager() {
                     onValueChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}
                   >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Select currency" />
                     </SelectTrigger>
                     <SelectContent className="z-[250] bg-white">
-                      <SelectItem value="£">£ (GBP)</SelectItem>
-                      <SelectItem value="$">$ (USD)</SelectItem>
-                      <SelectItem value="€">€ (EUR)</SelectItem>
-                      <SelectItem value="$">(SGD)</SelectItem>
+                      <SelectItem value="GBP">£ (GBP)</SelectItem>
+                      <SelectItem value="USD">$ (USD)</SelectItem>
+                      <SelectItem value="EUR">€ (EUR)</SelectItem>
+                      <SelectItem value="SGD">$ (SGD)</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-              </div>
-
-              {/* Earnings Information */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="hourlyEarnings">Average Hourly Earnings</Label>
-                  <Input
-                    id="hourlyEarnings"
-                    value={formData.averageHourlyEarnings}
-                    onChange={(e) => setFormData(prev => ({ ...prev, averageHourlyEarnings: e.target.value }))}
-                    placeholder="e.g., £12.50–£18+"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="taskEarnings">Average Per Task Earnings</Label>
-                  <Input
-                    id="taskEarnings"
-                    value={formData.averagePerTaskEarnings}
-                    onChange={(e) => setFormData(prev => ({ ...prev, averagePerTaskEarnings: e.target.value }))}
-                    placeholder="e.g., £4.50–£6.50"
-                  />
                 </div>
               </div>
 
@@ -361,6 +449,32 @@ export default function FeeStructureManager() {
                   ))}
                 </div>
               </div>
+
+              {/* Calculated Earnings Information */}
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                <div>
+                  <Label htmlFor="hourlyEarnings">Average Hourly Earnings</Label>
+                  <Input
+                    id="hourlyEarnings"
+                    value={formData.averageHourlyEarnings}
+                    readOnly
+                    className="bg-gray-50 cursor-not-allowed"
+                    placeholder="Calculated from blocks..."
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Automatically calculated from block details</p>
+                </div>
+                <div>
+                  <Label htmlFor="taskEarnings">Average Per Task Earnings</Label>
+                  <Input
+                    id="taskEarnings"
+                    value={formData.averagePerTaskEarnings}
+                    readOnly
+                    className="bg-gray-50 cursor-not-allowed"
+                    placeholder="Calculated from blocks..."
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Automatically calculated from block details</p>
+                </div>
+              </div>
             </div>
 
             <DialogFooter>
@@ -388,7 +502,7 @@ export default function FeeStructureManager() {
                   <CardTitle className="text-lg">{structure.city}</CardTitle>
                   <CardDescription className="mt-1">
                     <span className="inline-flex items-center gap-3 text-sm">
-                      <span>Currency: <strong>{structure.currency}</strong></span>
+                      <span>Currency: <strong>{getDisplayCurrency(structure.currency)}</strong></span>
                       <span>•</span>
                       <span>Hourly: <strong>{structure.averageHourlyEarnings}</strong></span>
                       <span>•</span>
@@ -452,7 +566,7 @@ export default function FeeStructureManager() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Minimum Fee:</span>
-                        <span className="font-medium">{structure.currency}{block.minimumFee}</span>
+                        <span className="font-medium">{getDisplayCurrency(structure.currency)}{block.minimumFee}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Included Tasks:</span>
@@ -460,7 +574,7 @@ export default function FeeStructureManager() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Additional Task:</span>
-                        <span className="font-medium">{structure.currency}{block.additionalTaskFee}</span>
+                        <span className="font-medium">{getDisplayCurrency(structure.currency)}{block.additionalTaskFee}</span>
                       </div>
                     </div>
                   </div>

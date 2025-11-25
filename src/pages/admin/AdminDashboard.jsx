@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { getCurrentStage } from "../../lib/progress-tracking";
+import LaundryheapLogo from "../../assets/logo";
 
 export default function AdminDashboard() {
   const { currentUser, isAuthorized, signOut } = useAdminAuth();
@@ -226,14 +227,26 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="bg-white shadow-sm border-b sticky top-0 z-30">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm">
-                <Users className="h-6 w-6 text-white" />
+              <div className="w-10 h-10 flex items-center justify-center shrink-0">
+                <svg
+                  width="40"
+                  height="40"
+                  viewBox="270 0 170 160"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-full h-full"
+                >
+                  <path
+                    d="M280.839 14.6317C274.557 19.0512 270.817 26.2593 270.817 33.9496V83.0697C270.817 93.8463 276.229 103.9 285.217 109.821L342.641 147.655C350.499 152.832 360.678 152.832 368.536 147.655L425.96 109.821C434.948 103.9 440.36 93.8463 440.36 83.0698V33.9496C440.36 26.2594 436.62 19.0512 430.338 14.6317L415.635 4.28764C406.826 -1.90906 394.946 -1.33884 386.769 5.67309L370.912 19.272C362.091 26.836 349.086 26.836 340.265 19.272L324.408 5.67308C316.231 -1.33884 304.351 -1.90906 295.542 4.28764L280.839 14.6317Z"
+                    fill="#FFD06D"
+                  />
+                </svg>
               </div>
               <div>
                 <h1 className="text-xl font-semibold text-gray-900">Laundryheap Admin</h1>
@@ -255,7 +268,7 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-6">
+      <div className="w-full px-4 sm:px-6 py-4">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
           <Card className="border-l-4 border-l-blue-500 shadow-sm hover:shadow-md transition-shadow">
@@ -315,79 +328,70 @@ export default function AdminDashboard() {
           {/* Applications Tab */}
           <TabsContent value="applications" className="space-y-6 mt-6">
             {/* Search and Filters */}
-            <Card className="shadow-sm border border-gray-200">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                  <Filter className="h-5 w-5 text-gray-600" />
-                  Search & Filter
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 z-10" />
+            <div className="bg-white border border-gray-200 rounded-md shadow-sm p-4">
+              <div className="space-y-4">
+                {/* Filter Row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">From</label>
                     <Input
-                      placeholder="Search by email, name, or city..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 w-full"
+                      type="date"
+                      className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                     />
                   </div>
-                  <div className="relative z-40">
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="w-full md:w-[180px]">
-                        <SelectValue placeholder="Status" />
-                      </SelectTrigger>
-                      <SelectContent className="z-[100] bg-white">
-                        <SelectItem value="all">All Status</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="approved">Approved</SelectItem>
-                        <SelectItem value="rejected">Rejected</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">To</label>
+                    <Input
+                      type="date"
+                      className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    />
                   </div>
-                  <div className="relative z-40">
-                    <Select value={onboardingFilter} onValueChange={setOnboardingFilter}>
-                      <SelectTrigger className="w-full md:w-[180px]">
-                        <SelectValue placeholder="Onboarding" />
-                      </SelectTrigger>
-                      <SelectContent className="z-[100] bg-white">
-                        <SelectItem value="all">All Onboarding</SelectItem>
-                        <SelectItem value="started">In Progress</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="flex items-end gap-2">
+                    <Button 
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                      onClick={() => loadData()}
+                    >
+                      Filter
+                    </Button>
+                    <Button 
+                      variant="destructive"
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                      onClick={() => {
+                        setSearchQuery("");
+                        setStatusFilter("all");
+                        setOnboardingFilter("all");
+                      }}
+                    >
+                      Reset
+                    </Button>
                   </div>
                 </div>
-                <div className="pt-2 border-t border-gray-100">
-                  <p className="text-sm text-gray-600">
-                    Showing <span className="font-semibold text-gray-900">{filteredApplications.length}</span> of <span className="font-semibold text-gray-900">{applications.length}</span> applications
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
             {/* Applications Table */}
-            <Card className="shadow-sm border border-gray-200">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg font-semibold">Applications</CardTitle>
-                <CardDescription>Manage and review driver applications</CardDescription>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-gray-50 border-b border-gray-200">
-                        <TableHead className="font-semibold text-gray-700">Email</TableHead>
-                        <TableHead className="font-semibold text-gray-700">Name</TableHead>
-                        <TableHead className="font-semibold text-gray-700">City</TableHead>
-                        <TableHead className="font-semibold text-gray-700">Status</TableHead>
-                        <TableHead className="font-semibold text-gray-700">Current Stage</TableHead>
-                        <TableHead className="font-semibold text-gray-700">Progress</TableHead>
-                        <TableHead className="font-semibold text-gray-700">Created</TableHead>
-                        <TableHead className="font-semibold text-right text-gray-700">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
+            <div className="bg-white border border-gray-200 rounded-md shadow-sm">
+              {/* Summary Bar */}
+              <div className="bg-gray-100 border-b border-gray-200 px-4 py-2">
+                <p className="text-sm text-gray-700">
+                  Filtered applications: <span className="font-semibold">{filteredApplications.length}</span> | Total applications: <span className="font-semibold">{applications.length}</span>
+                </p>
+              </div>
+
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-white border-b border-gray-200">
+                      <TableHead className="font-semibold text-gray-700 py-3">Email</TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-3">Name</TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-3">City</TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-3">Status</TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-3">Current Stage</TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-3">Progress</TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-3">Created</TableHead>
+                      <TableHead className="font-semibold text-right text-gray-700 py-3">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
                     <TableBody>
                       {filteredApplications.length === 0 ? (
                         <TableRow>
@@ -401,25 +405,27 @@ export default function AdminDashboard() {
                         </TableRow>
                       ) : (
                         filteredApplications.map((app) => (
-                        <TableRow key={app.id} className="hover:bg-gray-50 border-b border-gray-100 transition-colors">
-                          <TableCell className="font-medium text-sm py-4">{app.email}</TableCell>
-                          <TableCell className="text-sm py-4">{app.name || 'N/A'}</TableCell>
-                          <TableCell className="text-sm py-4">{app.city || 'N/A'}</TableCell>
-                          <TableCell className="py-4">{getStatusBadge(app.status)}</TableCell>
-                          <TableCell className="py-4">
+                        <TableRow key={app.id} className="hover:bg-gray-50 border-b border-gray-200 transition-colors">
+                          <TableCell className="font-medium text-sm py-3">{app.email}</TableCell>
+                          <TableCell className="text-sm py-3">{app.name || 'N/A'}</TableCell>
+                          <TableCell className="text-sm py-3">{app.city || 'N/A'}</TableCell>
+                          <TableCell className="py-3">{getStatusBadge(app.status)}</TableCell>
+                          <TableCell className="py-3">
                             <Badge variant="outline" className="text-xs">
                               {getCurrentStage(app)}
                             </Badge>
                           </TableCell>
-                          <TableCell className="py-4">{getOnboardingStatusBadge(app.onboardingStatus)}</TableCell>
-                          <TableCell className="text-sm text-gray-600 py-4">
+                          <TableCell className="py-3">{getOnboardingStatusBadge(app.onboardingStatus)}</TableCell>
+                          <TableCell className="text-sm text-gray-600 py-3">
                             {app.createdAt ? new Date(app.createdAt).toLocaleDateString('en-GB', { 
                               day: '2-digit', 
                               month: 'short', 
-                              year: 'numeric' 
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
                             }) : 'N/A'}
                           </TableCell>
-                          <TableCell className="py-4">
+                          <TableCell className="py-3">
                             <div className="flex items-center justify-end gap-2 flex-wrap">
                               <Button
                                 size="sm"
@@ -473,8 +479,8 @@ export default function AdminDashboard() {
                                 View
                               </Button>
                               <Button
-                                variant="outline"
                                 size="sm"
+                                className="bg-blue-600 hover:bg-blue-700 text-white"
                                 onClick={() => {
                                   setSelectedReport(null);
                                   setSelectedApplication(app);
@@ -552,8 +558,7 @@ export default function AdminDashboard() {
                     </TableBody>
                   </Table>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
           </TabsContent>
 
           {/* Fee Structures Tab */}
