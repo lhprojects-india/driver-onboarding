@@ -19,6 +19,7 @@ const Availability = () => {
     Thursdays: { noon: false, evening: false },
     Fridays: { noon: false, evening: false },
     Saturdays: { noon: false, evening: false },
+    Sundays: { noon: false, evening: false }
   });
 
   // Load existing availability data

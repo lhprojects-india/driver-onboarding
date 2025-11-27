@@ -18,6 +18,7 @@ const CancellationPolicy = () => {
 
   const [policyUnderstood, setPolicyUnderstood] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
   const { canProceed, timeRemaining } = useMinimumReadTime(30);
 
   // Load existing confirmation status
@@ -77,8 +78,35 @@ const CancellationPolicy = () => {
     }
   };
 
-  const handleWithdraw = () => {
-    navigate("/thank-you");
+  const handleWithdraw = async () => {
+    setIsWithdrawing(true);
+    try {
+      const success = await updateUserData({
+        status: 'withdrawn',
+        withdrawnAt: new Date().toISOString(),
+        withdrawalReason: 'Not satisfied with cancellation policy',
+        step: 'cancellation_policy'
+      });
+
+      if (success) {
+        navigate("/thank-you");
+      } else {
+        toast({
+          title: "Withdrawal Failed",
+          description: "Unable to process withdrawal. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error withdrawing application:", error);
+      toast({
+        title: "Withdrawal Failed",
+        description: "Unable to process withdrawal. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsWithdrawing(false);
+    }
   };
 
   return (
@@ -182,11 +210,11 @@ const CancellationPolicy = () => {
 
               <Button
                 onClick={handleWithdraw}
-                className="w-full max-w-xs"
-                variant="outline"
-                disabled={isSaving || isLoading}
+                className=" text-white w-full max-w-xs bg-laundryheap-Red hover:bg-opacity-90"
+                disabled={isSaving || isLoading || isWithdrawing}
+                showArrow={false}
               >
-                Withdraw my Application
+                {isWithdrawing ? "Processing..." : "Withdraw my Application"}
               </Button>
             </>
           )}

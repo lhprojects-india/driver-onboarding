@@ -16,6 +16,7 @@ const SmokingFitnessCheck = () => {
   const [smokingPolicy, setSmokingPolicy] = useState("");
   const [physicalFitness, setPhysicalFitness] = useState(null); // null = not selected, true = can climb, false = cannot climb
   const [isSaving, setIsSaving] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
   const { canProceed, timeRemaining } = useMinimumReadTime(30);
 
   // Load existing data
@@ -28,8 +29,35 @@ const SmokingFitnessCheck = () => {
     }
   }, [currentUser]);
 
-  const handleWithdraw = () => {
-    navigate("/thank-you");
+  const handleWithdraw = async () => {
+    setIsWithdrawing(true);
+    try {
+      const success = await updateUserData({
+        status: 'withdrawn',
+        withdrawnAt: new Date().toISOString(),
+        withdrawalReason: 'Cannot climb stairs - physical fitness requirement not met',
+        step: 'smoking_fitness_check'
+      });
+
+      if (success) {
+        navigate("/thank-you");
+      } else {
+        toast({
+          title: "Withdrawal Failed",
+          description: "Unable to process withdrawal. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error withdrawing application:", error);
+      toast({
+        title: "Withdrawal Failed",
+        description: "Unable to process withdrawal. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsWithdrawing(false);
+    }
   };
 
   const handleContinue = async () => {
@@ -164,14 +192,14 @@ const SmokingFitnessCheck = () => {
             <p className="text-sm text-gray-600 text-center max-w-md">
               If you cannot climb stairs, you will need to withdraw your application as this is a requirement for the role.
             </p>
-            <UIButton
+            <Button
               onClick={handleWithdraw}
-              className="w-full max-w-xs"
-              variant="outline"
-              disabled={isSaving || isLoading}
+              className=" text-white w-full max-w-xs bg-laundryheap-Red hover:bg-opacity-90"
+              disabled={isSaving || isLoading || isWithdrawing}
+              showArrow={false}
             >
-              Withdraw my Application
-            </UIButton>
+              {isWithdrawing ? "Processing..." : "Withdraw my Application"}
+            </Button>
           </div>
         ) : (
           <Button

@@ -14,6 +14,7 @@ const FacilityLocations = () => {
   const { toast } = useToast();
   useSaveProgress(); // Automatically save progress when user visits this page
   const [isSaving, setIsSaving] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [selectedFacilities, setSelectedFacilities] = useState([]);
   const [cityFacilities, setCityFacilities] = useState([]);
   const [loadingFacilities, setLoadingFacilities] = useState(true);
@@ -110,6 +111,37 @@ const FacilityLocations = () => {
     }
   };
 
+  const handleWithdraw = async () => {
+    setIsWithdrawing(true);
+    try {
+      const success = await updateUserData({
+        status: 'withdrawn',
+        withdrawnAt: new Date().toISOString(),
+        withdrawalReason: 'No comfortable facility locations available',
+        step: 'facility_locations'
+      });
+
+      if (success) {
+        navigate("/thank-you");
+      } else {
+        toast({
+          title: "Withdrawal Failed",
+          description: "Unable to process withdrawal. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error withdrawing application:", error);
+      toast({
+        title: "Withdrawal Failed",
+        description: "Unable to process withdrawal. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsWithdrawing(false);
+    }
+  };
+
   // Show loading state
   if (loadingFacilities) {
     return (
@@ -165,7 +197,7 @@ const FacilityLocations = () => {
             Please select the facility locations you're comfortable working with in your city.
           </p>
           
-          <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 max-h-[500px] overflow-y-auto mb-6">
+          <div className="border border-gray-300 rounded-lg p-4 max-h-[500px] overflow-y-auto mb-6">
             <div className="space-y-4">
               {cityFacilities.map((facility, index) => (
                 <div key={index} className="border-b border-gray-200 pb-4 last:border-b-0 last:pb-0">
@@ -186,13 +218,24 @@ const FacilityLocations = () => {
           )}
         </div>
         
-        <Button
-          onClick={handleContinue}
-          className="w-full max-w-xs mt-4 md:mt-8"
-          disabled={selectedFacilities.length === 0 || isSaving || isLoading}
-        >
-          {isSaving ? "Saving..." : "Continue"}
-        </Button>
+        <div className="w-full max-w-xs flex flex-col gap-3 mt-4 md:mt-8">
+          <Button
+            onClick={handleContinue}
+            className="w-full"
+            disabled={selectedFacilities.length === 0 || isSaving || isLoading || isWithdrawing}
+          >
+            {isSaving ? "Saving..." : "Continue"}
+          </Button>
+          
+          <Button
+            onClick={handleWithdraw}
+            className=" text-white w-full bg-laundryheap-Red hover:bg-opacity-90"
+            disabled={isSaving || isLoading || isWithdrawing}
+            showArrow={false}
+          >
+            {isWithdrawing ? "Processing..." : "Withdraw my Application"}
+          </Button>
+        </div>
       </div>
     </PageLayout>
   );

@@ -54,6 +54,8 @@ export default {
         laundryheap: {
           yellow: '#fcd34d',
           blue: '#3b82f6',
+          lightRed: '#fca5a5',
+          Red: '#dc3545',
         },
       },
       borderRadius: {

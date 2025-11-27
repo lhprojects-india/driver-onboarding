@@ -17,8 +17,8 @@ function AvailabilityGrid({ availability, onAvailabilityChange }) {
     <div className="w-full max-w-sm mt-6 animate-fade-in">
       <div className="grid grid-cols-3 mb-4">
         <div className="col-span-1"></div>
-        <div className="col-span-1 text-center text-sm font-medium">12 pm</div>
-        <div className="col-span-1 text-center text-sm font-medium">5 pm</div>
+        <div className="col-span-1 text-center text-sm font-medium">12 - 5 PM</div>
+        <div className="col-span-1 text-center text-sm font-medium">5 - 11 PM</div>
       </div>
 
       {Object.entries(availability).map(([day, slots]) => (

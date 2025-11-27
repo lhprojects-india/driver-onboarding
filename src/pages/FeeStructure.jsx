@@ -17,6 +17,7 @@ const FeeStructure = () => {
   const { toast } = useToast();
   const [feeStructures, setFeeStructures] = useState(null);
   const [loadingFeeStructures, setLoadingFeeStructures] = useState(true);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
   // Fee structure has more content, so require 45 seconds minimum read time
   const { canProceed, timeRemaining } = useMinimumReadTime(45);
 
@@ -133,10 +134,35 @@ const FeeStructure = () => {
     navigate("/blocks-classification");
   };
 
-  const handleWithdraw = () => {
-    // For withdrawal, we just navigate to thank you page
-    // In a real app, you might want to mark the application as withdrawn in the database
-    navigate("/thank-you");
+  const handleWithdraw = async () => {
+    setIsWithdrawing(true);
+    try {
+      const success = await updateUserData({
+        status: 'withdrawn',
+        withdrawnAt: new Date().toISOString(),
+        withdrawalReason: 'Not satisfied with fee structure',
+        step: 'fee_structure'
+      });
+
+      if (success) {
+        navigate("/thank-you");
+      } else {
+        toast({
+          title: "Withdrawal Failed",
+          description: "Unable to process withdrawal. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error withdrawing application:", error);
+      toast({
+        title: "Withdrawal Failed",
+        description: "Unable to process withdrawal. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsWithdrawing(false);
+    }
   };
 
   // Helper function to get currency symbol
@@ -354,11 +380,11 @@ const FeeStructure = () => {
               </Button>
               <Button
                 onClick={handleWithdraw}
-                className="w-full sm:w-auto"
-                variant="outline"
-                disabled={isLoading}
+                className=" text-white w-full sm:w-auto bg-laundryheap-Red hover:bg-opacity-90"
+                disabled={isLoading || loadingFeeStructures || isWithdrawing}
+                showArrow={false}
               >
-                Withdraw my Application
+                {isWithdrawing ? "Processing..." : "Withdraw my Application"}
               </Button>
             </div>
           )}
