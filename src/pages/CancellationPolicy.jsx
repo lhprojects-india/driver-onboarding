@@ -113,58 +113,47 @@ const CancellationPolicy = () => {
     <PageLayout compact title="">
       <div className="w-full flex flex-col items-center">
         <h2 className="text-center text-3xl font-bold mb-6 animate-slide-down">
-          Cancelling a Block – What You Need to Know
+          Block Cancellation Policy
         </h2>
         
         <div className="w-full max-w-2xl animate-fade-in">
           <div className="bg-gray-50 border border-gray-300 rounded-lg p-6 max-h-[500px] overflow-y-auto mb-6">
             <div className="text-left space-y-4 text-sm text-gray-900">
-              <p className="font-medium">
-                Thinking about cancelling a block? Here's how to stay on track and avoid extra fees:
-              </p>
-              
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div>
-                  <p className="font-semibold">🔹 The 48-Hour Rule</p>
-                  <p className="ml-6">
-                    You must release a block at least 48 hours before it starts.
-                  </p>
-                  <p className="ml-6">
-                    If not, it will be counted as a last-minute cancellation.
+                  <p className="font-semibold mb-2">48-Hour Rule</p>
+                  <p className="ml-4">
+                    Release your block at least 48 hours before it starts to avoid the full fee.
                   </p>
                 </div>
                 
                 <div>
-                  <p className="font-semibold">🔹 What Happens if You Miss the Deadline?</p>
-                  <p className="ml-6">
-                    A cancellation fee will apply, and this will be your full block fee as per Laundryheap's policy.
+                  <p className="font-semibold mb-2">Fees</p>
+                  <p className="ml-4">
+                    • Release 48+ hours early: 10% fee
+                  </p>
+                  <p className="ml-4">
+                    • Release less than 48 hours: Full block fee
                   </p>
                 </div>
                 
                 <div>
-                  <p className="font-semibold">🔹 Releasing on Time Saves You Money</p>
-                  <p className="ml-6">
-                    If you release the block more than 48 hours in advance, you'll only be charged a 10% block release fee and not the entire block fee.
+                  <p className="font-semibold mb-2">Example</p>
+                  <p className="ml-4 mb-1">
+                    Block: 16th January at 5:00 PM (€100)
+                  </p>
+                  <p className="ml-4 mb-1">
+                    Release before 14th January 5:00 PM → €10 fee
+                  </p>
+                  <p className="ml-4">
+                    Release after 14th January 5:00 PM → €100 fee
                   </p>
                 </div>
                 
                 <div>
-                  <p className="font-semibold">🔹 Example — Simple and Clear</p>
-                  <p className="ml-6">
-                    You've picked a block for 16th January at 5:00 PM.
-                  </p>
-                  <p className="ml-6">
-                    To avoid the full fee, you need to release it before 5:00 PM on 14th January.
-                  </p>
-                  <p className="ml-6">
-                    That's your 48-hour window!
-                  </p>
-                </div>
-                
-                <div>
-                  <p className="font-semibold">🔹 Why This Matters</p>
-                  <p className="ml-6">
-                    Releasing blocks early helps the team reassign the slot smoothly, ensuring customers receive consistent service — and it helps everyone avoid unnecessary delays.
+                  <p className="font-semibold mb-2">Why This Matters</p>
+                  <p className="ml-4">
+                    Releasing blocks early helps us reassign slots and ensures customers get consistent service.
                   </p>
                 </div>
               </div>

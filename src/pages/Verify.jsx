@@ -65,7 +65,7 @@ const Verify = () => {
         </h2>
         
         <div className="w-full max-w-xs space-y-4 animate-fade-in">
-          <p className="text-center text-sm text-gray-600 mb-4">
+          <p className="text-center text-sm text-white mb-4">
             We will match the mobile number with the email ID you entered to verify your identity.
           </p>
           
@@ -77,7 +77,7 @@ const Verify = () => {
             required
           />
           
-          <p className="text-center text-xs text-gray-500 mt-2">
+          <p className="text-center text-xs text-white opacity-80 mt-2">
             Enter the mobile number you registered with on Fountain
           </p>
         </div>

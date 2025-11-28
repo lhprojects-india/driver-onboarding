@@ -131,7 +131,7 @@ const SmokingFitnessCheck = () => {
                   Also, please make sure to wash and sanitize your hands before you start your block.
                 </p>
                 <p>
-                  Kindly note that if we receive customer feedback regarding a smoke smell on the orders, the partner driver will be held liable for any compensation required. In addition, their access to the platform may be revoked, as such incidents severely impact customer satisfaction and brand standards.
+                  Kindly note that if we receive customer feedback regarding a smoke smell on the orders, the partner driver will be held liable for any compensation required. In addition, their access to the platform may be limited, as such incidents severely impact customer satisfaction and brand standards.
                 </p>
               </div>
             </div>
@@ -189,7 +189,7 @@ const SmokingFitnessCheck = () => {
         
         {physicalFitness === false ? (
           <div className="w-full flex flex-col items-center space-y-4 mt-6">
-            <p className="text-sm text-gray-600 text-center max-w-md">
+            <p className="text-sm text-white text-center max-w-md">
               If you cannot climb stairs, you will need to withdraw your application as this is a requirement for the role.
             </p>
             <Button

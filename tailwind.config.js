@@ -56,6 +56,21 @@ export default {
           blue: '#3b82f6',
           lightRed: '#fca5a5',
           Red: '#dc3545',
+          // Brand colors - Main
+          brandYellow: '#FFD06D',
+          brandPink: '#EF8EA2',
+          brandTeal: '#2FCCC0',
+          brandBlue: '#0890F1',
+          // Brand colors - Shades
+          shadeBlue: '#202B93',
+          shadeTeal: '#04B4A8',
+          shadePink: '#ED738C',
+          shadeYellow: '#FFB55D',
+          // Brand colors - Lights
+          lightBlue: '#BAEBFF',
+          lightTeal: '#93ECE5',
+          lightPink: '#FBB4C2',
+          lightYellow: '#FFE5AE',
         },
       },
       borderRadius: {

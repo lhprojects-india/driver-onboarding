@@ -1,7 +1,7 @@
 const LaundryheapLogo = () => {
   return (
     <div className="flex flex-col justify-center items-center py-4 md:py-8">
-      <div className="animate-slide-down w-32 h-32 md:w-40 md:h-40">
+      <div className="animate-slide-down w-20 h-20 md:w-24 md:h-24">
         <svg
           width="100%"
           height="100%"

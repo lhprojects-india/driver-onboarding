@@ -2,10 +2,16 @@ import { useNavigate } from "react-router-dom";
 import PageLayout from "@/components/PageLayout";
 import Button from "@/components/Button";
 import { useSaveProgress } from "@/hooks/useSaveProgress";
+import { useAuth } from "@/context/AuthContext";
 
 const Introduction = () => {
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
   useSaveProgress(); // Automatically save progress when user visits this page
+
+  // Get applicant name from fountainData or currentUser
+  const applicantName = currentUser?.fountainData?.name || currentUser?.name || "";
+  const title = applicantName ? `Hi ${applicantName}!` : "Hi there!";
 
   const handleContinue = () => {
     navigate("/about");
@@ -13,7 +19,7 @@ const Introduction = () => {
 
   return (
     <PageLayout className="flex flex-col items-center space-y-4"
-      title="Hi there!"
+      title={title}
       subtitle="Welcome to your introductory training session. In this module, you'll get a clear overview of how things work at Laundryheap. Completing this section will take approximately 10–15 minutes."
     >
       <div className="w-full flex flex-col items-center space-y-4">
@@ -21,12 +27,11 @@ const Introduction = () => {
           <p className="font-semibold mb-2">Things Covered:</p>
           <ul className="list-disc list-inside text-left">
             <li>About the Company</li>
-            <li>Onboarding Stages</li>
             <li>Role Explanation</li>
-            <li>Availability</li>
-            <li>Fee Structure</li>
-            <li>Cancellation Policy</li>
-            <li>Liability</li>
+            <li>Availability and Facility Locations</li>
+            <li>Blocks Classification and Fee Structure</li>
+            <li>Cancellation policy</li>
+            <li>Liability Policy</li>
           </ul>
         </div>
         <Button 

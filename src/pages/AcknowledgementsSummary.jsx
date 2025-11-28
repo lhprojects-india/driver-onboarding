@@ -107,10 +107,10 @@ const AcknowledgementsSummary = () => {
               Review Your Acknowledgements
             </h2>
             <p className="text-lg text-muted-foreground mb-2">
-              There will be an AI call after this application flow is completed.
+            After completing this application, you will move on to an automated interview.
             </p>
             <p className="text-base text-muted-foreground mb-6">
-              The AI call will include questions about the policies you've reviewed. If you want to go back and read anything again, please do it now.
+            It will include questions based on the policies you've reviewed. If you want to review anything, now is a good time.
             </p>
           </div>
 
@@ -133,7 +133,7 @@ const AcknowledgementsSummary = () => {
                         {isCompleted && (
                           <CheckCircle2 className="h-5 w-5 text-green-600" />
                         )}
-                        <span className={`font-medium ${isCompleted ? 'text-green-900' : 'text-gray-500'}`}>
+                        <span className={`font-medium ${isCompleted ? 'text-green-900' : 'text-gray-700'}`}>
                           {ack.title}
                         </span>
                       </div>

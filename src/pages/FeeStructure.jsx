@@ -241,7 +241,7 @@ const FeeStructure = () => {
                 Even if there are fewer tasks on a given day, you&apos;ll still receive this full minimum amount.
               </p>
               <p>
-                If you complete more than the included number of tasks, you&apos;ll earn extra pay for each additional task — the busier it is, the more you make.
+                If you complete more than the included number of tasks, you&apos;ll earn extra pay for each additional task — the busier it is, the more you earn.
               </p>
               <p className="font-medium">
                 Only successfully completed tasks count toward your pay. Tasks that are failed or not delivered/picked up are not paid.

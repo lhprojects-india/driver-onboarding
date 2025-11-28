@@ -6,6 +6,7 @@ import PageLayout from "@/components/PageLayout";
 import Button from "@/components/Button";
 import CheckboxWithLabel from "@/components/CheckboxWithLabel";
 import { useToast } from "@/hooks/use-toast";
+import roleExplanationImage from "@/assets/driver-role-vertical.png";
 
 const Role = () => {
   const navigate = useNavigate();
@@ -62,48 +63,24 @@ const Role = () => {
           Driver role
         </h2>
         
-        <div className="w-full max-w-md animate-fade-in">
-          <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 max-h-[500px] overflow-y-auto mb-6">
-            <div className="text-left space-y-4 text-sm text-gray-900">
-              <p>
-                As a Laundryheap Partner Driver, you will be responsible for completing a series of essential delivery and collection tasks that ensure smooth daily operations and excellent customer experience. Your main responsibilities include:
-              </p>
-              
-              <div>
-                <p className="font-semibold">1. Facility Pick-Up</p>
-                <p>
-                  Your route begins at one of our Laundryheap facilities, where you will collect processed items in bags and hangers that are ready to be delivered to customers. Ensure that all items are correctly scanned and securely loaded into your vehicle.
-                </p>
-              </div>
-              
-              <div>
-                <p className="font-semibold">2. Customer Delivery</p>
-                <p>
-                  Deliver the collected items directly to customers' addresses. Accuracy, professionalism, and punctuality are key — our goal is to provide every customer with a seamless and reliable delivery experience.
-                </p>
-              </div>
-              
-              <div>
-                <p className="font-semibold">3. Customer Pick-Up</p>
-                <p>
-                  While on your route, you will also collect unprocessed laundry items from customers. These items must be properly tagged, scanned, and handled with care before being transported back to the facility.
-                </p>
-              </div>
-              
-              <div>
-                <p className="font-semibold">4. Facility Drop-Off</p>
-                <p>
-                  At the end of your route, return to the facility to drop off all collected (unprocessed) items. This step completes the service cycle and ensures items are ready for processing.
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <CheckboxWithLabel
-            label="I understand my role"
-            checked={roleUnderstood}
-            onChange={setRoleUnderstood}
+        <p className="text-center text-base mb-6 max-w-2xl px-4 animate-fade-in">
+          As a Laundryheap Partner Driver, you will be responsible for completing a series of essential delivery and collection tasks that ensure smooth daily operations and excellent customer experience. Your main responsibilities include:
+        </p>
+        
+        <div className="w-full max-w-md animate-fade-in mb-6">
+          <img 
+            src={roleExplanationImage} 
+            alt="Role explanation diagram" 
+            className="w-full h-auto rounded-lg border-2 border-white mb-8"
           />
+          
+          <div className="px-4 py-2">
+            <CheckboxWithLabel
+              label="I understand my role"
+              checked={roleUnderstood}
+              onChange={setRoleUnderstood}
+            />
+          </div>
         </div>
         
         <Button 

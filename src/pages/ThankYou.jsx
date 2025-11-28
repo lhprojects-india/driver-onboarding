@@ -24,11 +24,11 @@ const ThankYou = () => {
           </h2>
           
           <p>
-           You will get a link for the AI call very soon.
+          You will receive the link for the virtual call shortly.
           </p>
           
           <p className="mt-6 md:mt-12">
-            For any further queries or concerns, please do not hesitate to reach out to Scout@laundryheap.com
+            For any further queries or concerns, please do not hesitate to reach out to scout@laundryheap.com
           </p>
         </div>
         
