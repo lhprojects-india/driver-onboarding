@@ -1,5 +1,4 @@
 import { useLocation } from "react-router-dom";
-import { cn } from "@/lib/utils";
 
 // Define the routes that should show progress bar (from confirm-details to liabilities)
 const PROGRESS_ROUTES = [
@@ -43,33 +42,11 @@ const ProgressBar = () => {
         </div>
         
         {/* Progress bar */}
-        <div className="relative w-full h-2.5 bg-gray-200 rounded-full overflow-hidden mb-3">
+        <div className="relative w-full h-2.5 bg-gray-200 rounded-full overflow-hidden">
           <div
             className="h-full bg-laundryheap-lightYellow transition-all duration-300 ease-in-out rounded-full"
             style={{ width: `${progressPercentage}%` }}
           />
-        </div>
-        
-        {/* Step indicators - visual dots for each step */}
-        <div className="flex justify-between gap-1">
-          {PROGRESS_ROUTES.map((route, index) => {
-            const stepNumber = index + 1;
-            const isCurrent = route === currentPath;
-            const isCompleted = currentStepIndex > index;
-            
-            return (
-              <div
-                key={route}
-                className={cn(
-                  "flex-1 h-1.5 rounded-full transition-all duration-300",
-                  isCurrent && "bg-laundryheap-lightYellow h-2 ring-2 ring-laundryheap-lightYellow ring-offset-1",
-                  isCompleted && !isCurrent && "bg-laundryheap-lightYellow/60",
-                  !isCompleted && !isCurrent && "bg-laundryheap-brandYellow"
-                )}
-                title={`Step ${stepNumber}`}
-              />
-            );
-          })}
         </div>
       </div>
     </div>
