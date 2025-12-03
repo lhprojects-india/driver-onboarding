@@ -188,4 +188,144 @@
   .laundryheap-page {
     @apply min-h-screen w-full bg-laundryheap-blue text-white flex flex-col items-center px-4 md:px-6 pt-4 md:pt-12 pb-6 animate-fade-in;
   }
+
+  /* PhoneInput styling */
+  .phone-input-wrapper {
+    @apply w-full;
+    display: flex !important;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  /* Ensure PhoneInputCountry is visible and shows flag */
+  .phone-input-wrapper > .PhoneInputCountry {
+    display: flex !important;
+    visibility: visible !important;
+  }
+
+  .phone-input-wrapper .PhoneInputInput {
+    @apply flex-1 h-[48px] p-3 text-left text-black bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-laundryheap-yellow;
+    flex: 1;
+    text-align: left !important;
+  }
+
+  .phone-input-wrapper .PhoneInputCountry {
+    @apply h-[48px] flex items-center;
+    margin-right: 0;
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  .phone-input-wrapper .PhoneInputCountrySelect {
+    @apply h-[48px] min-w-[140px] px-3 bg-white border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-laundryheap-yellow hover:bg-gray-50;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    text-align: left !important;
+    padding-left: 0.75rem !important;
+    gap: 0.5rem !important;
+  }
+
+  .phone-input-wrapper .PhoneInputCountrySelect > * {
+    text-align: left !important;
+    justify-content: flex-start !important;
+  }
+
+  .phone-input-wrapper .PhoneInputCountryIcon {
+    margin-right: 0.5rem !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    width: calc(36px * 1.5) !important;
+    height: 36px !important;
+    background-color: white !important;
+    border-radius: 0.5rem !important;
+    padding: 0.5rem !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  .phone-input-wrapper .PhoneInputCountryIcon--square {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  /* Remove border styling but keep the element visible with white background */
+  .phone-input-wrapper .PhoneInputCountryIcon--border {
+    box-shadow: none !important;
+    background-color: white !important;
+    display: flex !important;
+    visibility: visible !important;
+    border-radius: 0.5rem !important;
+    padding: 0.5rem !important;
+    width: calc(36px * 1.5) !important;
+    height: 36px !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .phone-input-wrapper .PhoneInputCountryIconImg,
+  .phone-input-wrapper .PhoneInputCountryIcon img {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 100% !important;
+    height: 100% !important;
+    border: none !important;
+    object-fit: contain !important;
+  }
+
+  .phone-input-wrapper .PhoneInputCountry img,
+  .phone-input-wrapper .PhoneInputCountrySelect img {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+  
+  /* Ensure flag icon container in country selector is visible */
+  .phone-input-wrapper .PhoneInputCountrySelect .PhoneInputCountryIcon {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    margin-right: 0.5rem !important;
+    width: calc(1.2em * 1.5) !important;
+    height: 1.2em !important;
+    flex-shrink: 0 !important;
+  }
+  
+  /* Ensure flag image inside country selector is visible */
+  .phone-input-wrapper .PhoneInputCountrySelect .PhoneInputCountryIcon img,
+  .phone-input-wrapper .PhoneInputCountrySelect .PhoneInputCountryIconImg {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+  }
+  
+  /* Ensure the country selector shows the flag */
+  .phone-input-wrapper .PhoneInputCountrySelect::before {
+    content: '';
+    display: none;
+  }
+
+  .phone-input-wrapper .PhoneInputCountrySelectArrow {
+    @apply opacity-50;
+    margin-left: auto !important;
+    margin-right: 0.5rem !important;
+  }
+
+  .phone-input-wrapper .PhoneInputCountrySelectArrow--arrow {
+    margin-left: auto !important;
+  }
+
+  .phone-number-input {
+    @apply text-center;
+  }
 }

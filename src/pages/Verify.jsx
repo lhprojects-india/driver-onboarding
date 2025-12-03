@@ -3,10 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { Phone } from "lucide-react";
 import PageLayout from "@/components/PageLayout";
 import Button from "@/components/Button";
-import Input from "@/components/Input";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { getNextRoute } from "@/lib/progress-tracking";
+import PhoneInput from "react-phone-number-input";
+import "react-phone-number-input/style.css";
 
 const Verify = () => {
   const [phone, setPhone] = useState("");
@@ -51,6 +52,7 @@ const Verify = () => {
       return;
     }
 
+    // PhoneInput already includes country code in the phone value
     const success = await verifyPhone(phone);
     if (success) {
       navigate("/confirm-details");
@@ -69,13 +71,23 @@ const Verify = () => {
             We will match the mobile number with the email ID you entered to verify your identity.
           </p>
           
-          <Input
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="+353 12 345 6789"
-            type="tel"
-            required
-          />
+          <div className="w-full">
+            <PhoneInput
+              international
+              defaultCountry="GB"
+              value={phone}
+              onChange={setPhone}
+              className="phone-input-wrapper"
+              withCountryCallingCode
+              flagUrl="https://catamphetamine.github.io/country-flag-icons/3x2/{XX}.svg"
+              numberInputProps={{
+                className: "phone-number-input",
+                placeholder: "12 345 6789",
+                style: { textAlign: 'left' }
+              }}
+            />
+            <p className="text-xs text-center mt-1 text-white opacity-70">*This field is mandatory</p>
+          </div>
           
           <p className="text-center text-xs text-white opacity-80 mt-2">
             Enter the mobile number you registered with on Fountain

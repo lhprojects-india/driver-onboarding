@@ -12,9 +12,10 @@ function CheckboxWithLabel({ label, checked, onChange }) {
         role="checkbox"
         aria-checked={checked}
         onClick={handleClick}
-        className={`w-6 h-6 flex items-center justify-center rounded-full border-2 transition-all ${
+        className={`flex-shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full border-2 transition-all overflow-hidden box-border p-0 ${
           checked ? 'bg-laundryheap-yellow border-transparent' : 'bg-transparent border-white'
         }`}
+        style={{ aspectRatio: '1 / 1' }}
       >
         {checked && <Check size={16} className="text-black" />}
       </button>
