@@ -83,24 +83,6 @@ export const validateField = (fieldName, value) => {
   };
 };
 
-export const validateForm = (formData) => {
-  const errors = {};
-  let isFormValid = true;
-
-  Object.keys(formData).forEach(fieldName => {
-    const validation = validateField(fieldName, formData[fieldName]);
-    if (!validation.isValid) {
-      errors[fieldName] = validation.message;
-      isFormValid = false;
-    }
-  });
-
-  return {
-    isValid: isFormValid,
-    errors
-  };
-};
-
 // Sanitize input data
 export const sanitizeInput = (input) => {
   if (typeof input !== 'string') return input;

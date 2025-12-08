@@ -2,13 +2,25 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { acknowledgementServices } from "@/lib/firebase-services";
+import { acknowledgementServices, feeStructureServices } from "@/lib/firebase-services";
+import { getVehicleTypeFromMOT } from "@/lib/utils";
 import PageLayout from "@/components/PageLayout";
 import Button from "@/components/Button";
 import { Button as UIButton } from "@/components/ui/button";
 import CheckboxWithLabel from "@/components/CheckboxWithLabel";
 import { useToast } from "@/hooks/use-toast";
 import { useMinimumReadTime } from "@/hooks/useMinimumReadTime";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const CancellationPolicy = () => {
   const navigate = useNavigate();
@@ -19,7 +31,42 @@ const CancellationPolicy = () => {
   const [policyUnderstood, setPolicyUnderstood] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [currency, setCurrency] = useState('£'); // Default to £ (Birmingham)
   const { canProceed, timeRemaining } = useMinimumReadTime(30);
+
+  // Fetch currency based on user's city
+  useEffect(() => {
+    const fetchCurrency = async () => {
+      try {
+        // Get city from user data (could be from fountainData or city field)
+        const city = currentUser?.fountainData?.city || currentUser?.city;
+        
+        if (!city) {
+          console.warn('⚠️ No city found in user data, using default currency (£)');
+          return;
+        }
+
+        // Extract vehicle type from MOT data (same as FeeStructure page)
+        const vehicleType = getVehicleTypeFromMOT(currentUser?.fountainData);
+
+        console.log(`🔍 Fetching fee structure for currency: ${city} (vehicle type: ${vehicleType})`);
+        const structures = await feeStructureServices.getFeeStructuresByCity(city, vehicleType);
+        
+        if (structures?.currency) {
+          console.log(`✅ Currency loaded for ${city}: ${structures.currency}`);
+          setCurrency(structures.currency);
+        } else {
+          console.warn(`⚠️ No currency found for ${city}, using default (£)`);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching fee structure for currency:', error);
+      }
+    };
+
+    if (currentUser) {
+      fetchCurrency();
+    }
+  }, [currentUser]);
 
   // Load existing confirmation status
   useEffect(() => {
@@ -140,13 +187,13 @@ const CancellationPolicy = () => {
                 <div>
                   <p className="font-semibold mb-2">Example</p>
                   <p className="ml-4 mb-1">
-                    Block: 16th January at 5:00 PM (€100)
+                    Block: 16th January at 5:00 PM ({currency}100)
                   </p>
                   <p className="ml-4 mb-1">
-                    Release before 14th January 5:00 PM → €10 fee
+                    Release before 14th January 5:00 PM → {currency}10 fee
                   </p>
                   <p className="ml-4">
-                    Release after 14th January 5:00 PM → €100 fee
+                    Release after 14th January 5:00 PM → {currency}100 fee
                   </p>
                 </div>
                 
@@ -197,14 +244,34 @@ const CancellationPolicy = () => {
                 {isSaving ? "Saving..." : "Continue"}
               </Button>
 
-              <Button
-                onClick={handleWithdraw}
-                className=" text-white w-full max-w-xs bg-laundryheap-Red hover:bg-opacity-90"
-                disabled={isSaving || isLoading || isWithdrawing}
-                showArrow={false}
-              >
-                {isWithdrawing ? "Processing..." : "Withdraw my Application"}
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    className=" text-white w-full max-w-xs bg-laundryheap-Red hover:bg-opacity-90"
+                    disabled={isSaving || isLoading || isWithdrawing}
+                    showArrow={false}
+                  >
+                    {isWithdrawing ? "Processing..." : "Withdraw my Application"}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="z-[200]">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Withdraw Application</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to withdraw your application? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleWithdraw}
+                      className="bg-laundryheap-Red hover:bg-laundryheap-Red text-white"
+                    >
+                      Withdraw Application
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </>
           )}
         </div>

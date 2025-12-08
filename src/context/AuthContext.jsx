@@ -1,11 +1,11 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
 import { useToast } from "../hooks/use-toast";
 import { authServices, driverServices } from "../lib/firebase-services";
 import { adminServices } from "../lib/admin-services";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../lib/firebase";
 import { isAuthorizedAdmin } from "../lib/admin-config";
+import { getAuthToken, clearAuthToken } from "../lib/cookie-utils";
 
 const AuthContext = createContext(undefined);
 
@@ -14,7 +14,6 @@ export function AuthProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const location = useLocation();
 
   // Listen for authentication state changes
   useEffect(() => {
@@ -25,7 +24,8 @@ export function AuthProvider({ children }) {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       // CRITICAL: Don't process driver authentication if on admin routes
       // Admin routes are handled by AdminAuthContext
-      const currentPath = location.pathname;
+      // Check on mount only, not on every navigation
+      const currentPath = window.location.pathname;
       const isAdminRoute = currentPath && currentPath.startsWith('/admin');
       
       if (isAdminRoute) {
@@ -152,27 +152,51 @@ export function AuthProvider({ children }) {
     });
 
     return () => unsubscribe();
-  }, [location.pathname]);
+  }, []); // Remove location.pathname dependency to prevent re-running on navigation
 
-  // Restore email and fountainData from localStorage on mount (if not authenticated yet)
+  // Restore email and fountainData from localStorage and re-authenticate if needed
   useEffect(() => {
-    // Only restore if we don't have currentUser and we're not loading
-    if (!isLoading && !currentUser && !isAuthenticated) {
-      const storedEmail = localStorage.getItem('driver_email');
-      const storedFountainData = localStorage.getItem('driver_fountainData');
-      
-      if (storedEmail && storedFountainData) {
-        try {
-          const fountainData = JSON.parse(storedFountainData);
-          setCurrentUser({
-            email: storedEmail,
-            fountainData: fountainData
-          });
-        } catch (e) {
-          console.error('Failed to restore fountainData from localStorage', e);
+    const restoreSession = async () => {
+      // Only restore if we don't have currentUser and we're not loading
+      if (!isLoading && !currentUser && !isAuthenticated) {
+        const storedEmail = localStorage.getItem('driver_email');
+        const storedFountainData = localStorage.getItem('driver_fountainData');
+        const storedToken = getAuthToken();
+        
+        if (storedEmail && storedFountainData) {
+          try {
+            const fountainData = JSON.parse(storedFountainData);
+            
+            // Try to re-authenticate with stored token if available
+            if (storedToken) {
+              try {
+                const { signInWithCustomToken } = await import('firebase/auth');
+                await signInWithCustomToken(auth, storedToken);
+                // onAuthStateChanged will handle setting the user data
+                return;
+              } catch (reAuthError) {
+                console.warn('⚠️ Re-authentication failed, clearing stored token:', reAuthError.message);
+                clearAuthToken();
+                // Continue to restore user data without Firebase auth
+              }
+            }
+            
+            // If no token or re-auth failed, just restore the user data
+            setCurrentUser({
+              email: storedEmail,
+              fountainData: fountainData
+            });
+            // Mark as authenticated if we have valid user data
+            // This handles cases where Firebase Auth loses the session but we have valid data
+            setIsAuthenticated(true);
+          } catch (e) {
+            console.error('Failed to restore session from localStorage', e);
+          }
         }
       }
-    }
+    };
+    
+    restoreSession();
   }, [isLoading, currentUser, isAuthenticated]);
 
   // Check if email exists in Fountain applicants
@@ -191,7 +215,6 @@ export function AuthProvider({ children }) {
             city: result.city,
             country: result.country,
             funnelId: result.funnelId,
-            collectionName: result.collectionName,
           }
         };
         setCurrentUser(userData);

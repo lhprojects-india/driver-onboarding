@@ -7,6 +7,17 @@ import CheckboxWithLabel from "@/components/CheckboxWithLabel";
 import { useToast } from "@/hooks/use-toast";
 import { useSaveProgress } from "@/hooks/useSaveProgress";
 import { facilityServices } from "@/lib/firebase-services";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const FacilityLocations = () => {
   const navigate = useNavigate();
@@ -227,14 +238,34 @@ const FacilityLocations = () => {
             {isSaving ? "Saving..." : "Continue"}
           </Button>
           
-          <Button
-            onClick={handleWithdraw}
-            className=" text-white w-full bg-laundryheap-Red hover:bg-opacity-90"
-            disabled={isSaving || isLoading || isWithdrawing}
-            showArrow={false}
-          >
-            {isWithdrawing ? "Processing..." : "Withdraw my Application"}
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                className=" text-white w-full bg-laundryheap-Red hover:bg-opacity-90"
+                disabled={isSaving || isLoading || isWithdrawing}
+                showArrow={false}
+              >
+                {isWithdrawing ? "Processing..." : "Withdraw my Application"}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="z-[200]">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Withdraw Application</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to withdraw your application? This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleWithdraw}
+                  className="bg-laundryheap-Red hover:bg-laundryheap-Red text-white"
+                >
+                  Withdraw Application
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     </PageLayout>

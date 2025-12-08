@@ -55,9 +55,9 @@ service cloud.firestore {
       allow write: if false; // Only Admin SDK can write
     }
     
-    // Fountain applicants collection - read-only for authenticated users to verify their email/phone
+    // Fountain applicants collection - users can read their own data, admins can read all
     match /fountain_applicants/{email} {
-      allow read: if request.auth != null;
+      allow read: if isOwnerOrAdmin(email);
       allow write: if false; // Only cloud functions can write
     }
     

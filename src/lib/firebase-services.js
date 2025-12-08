@@ -31,11 +31,7 @@ const COLLECTIONS = {
 // Collections are now auto-generated from webhook data (city + role)
 // No need to manually add them anymore!
 // Backend automatically creates collections like: fountain_applicants_dublin_partner_driver
-const FOUNTAIN_COLLECTIONS = [
-  'fountain_applicants', // Default/fallback collection
-  // Note: All fountain_applicants_* collections are searched automatically by backend
-  // Frontend can add specific ones here for faster lookup, but it's optional
-];
+// All fountain_applicants_* collections are searched automatically by backend
 
 // Authentication Services
 export const authServices = {
@@ -56,7 +52,6 @@ export const authServices = {
           city: result.data.city,
           country: result.data.country,
           funnelId: result.data.funnelId,
-          collectionName: result.data.collectionName,
         };
       }
 
@@ -306,7 +301,100 @@ export const driverServices = {
       const userDoc = await getDoc(userRef);
 
       if (userDoc.exists()) {
-        return userDoc.data();
+        const userData = userDoc.data();
+        
+        // Check if fountainData needs to be enriched with full webhook structure
+        const needsEnrichment = userData.fountainData && 
+          (!userData.fountainData.data) && 
+          (!userData.fountainData.applicant);
+        
+        if (needsEnrichment) {
+          console.log('🔍 FountainData needs enrichment, fetching from fountain_applicants...', {
+            email,
+            hasFountainData: !!userData.fountainData,
+            fountainDataKeys: Object.keys(userData.fountainData || {})
+          });
+          
+          try {
+            const fountainApplicantRef = doc(db, COLLECTIONS.FOUNTAIN_APPLICANTS, email);
+            const fountainApplicantDoc = await getDoc(fountainApplicantRef);
+            
+            if (fountainApplicantDoc.exists()) {
+              const fountainApplicantData = fountainApplicantDoc.data();
+              console.log('✅ Found fountain_applicants document:', {
+                hasFountainData: !!fountainApplicantData.fountainData,
+                hasData: !!fountainApplicantData.fountainData?.data,
+                hasApplicant: !!fountainApplicantData.fountainData?.applicant,
+                applicantDataMot: fountainApplicantData.fountainData?.applicant?.data?.mot,
+                fountainDataKeys: fountainApplicantData.fountainData ? Object.keys(fountainApplicantData.fountainData).slice(0, 10) : []
+              });
+              
+              // Merge the full fountainData if available
+              if (fountainApplicantData.fountainData) {
+                // Deep merge to preserve nested structures
+                userData.fountainData = {
+                  ...userData.fountainData, // Keep existing simplified data
+                  ...fountainApplicantData.fountainData, // Merge full webhook payload
+                  // Ensure nested structures are preserved
+                  ...(fountainApplicantData.fountainData.data && {
+                    data: {
+                      ...(userData.fountainData.data || {}),
+                      ...fountainApplicantData.fountainData.data
+                    }
+                  }),
+                  ...(fountainApplicantData.fountainData.applicant && {
+                    applicant: {
+                      ...(userData.fountainData.applicant || {}),
+                      ...fountainApplicantData.fountainData.applicant,
+                      ...(fountainApplicantData.fountainData.applicant.data && {
+                        data: {
+                          ...(userData.fountainData.applicant?.data || {}),
+                          ...fountainApplicantData.fountainData.applicant.data
+                        }
+                      })
+                    }
+                  })
+                };
+                
+                console.log('✅ Merged fountainData:', {
+                  hasData: !!userData.fountainData.data,
+                  hasApplicant: !!userData.fountainData.applicant,
+                  applicantDataMot: userData.fountainData.applicant?.data?.mot,
+                  topLevelKeys: Object.keys(userData.fountainData).slice(0, 10)
+                });
+                
+                // Save enriched fountainData back to Firestore so it persists
+                // This prevents needing to fetch and merge on every getDriverData call
+                // Use setDoc with merge to handle complex nested structures
+                try {
+                  await setDoc(userRef, {
+                    fountainData: userData.fountainData,
+                    updatedAt: serverTimestamp()
+                  }, { merge: true });
+                  console.log('✅ Saved enriched fountainData back to Firestore');
+                } catch (saveError) {
+                  console.error('⚠️ Could not save enriched fountainData:', saveError.message, saveError.code);
+                  // Non-critical - continue with enriched data in memory
+                  // The data will still be available for this session
+                }
+              }
+            } else {
+              console.warn('⚠️ No fountain_applicants document found for:', email);
+            }
+          } catch (error) {
+            console.error('❌ Could not fetch full fountainData from fountain_applicants:', error);
+            console.error('Error details:', error.message, error.code);
+            // Continue with existing data
+          }
+        } else {
+          console.log('ℹ️ FountainData already has full structure or no fountainData exists:', {
+            hasFountainData: !!userData.fountainData,
+            hasData: !!userData.fountainData?.data,
+            hasApplicant: !!userData.fountainData?.applicant
+          });
+        }
+        
+        return userData;
       }
       return null;
     } catch (error) {
@@ -489,7 +577,8 @@ export const acknowledgementServices = {
 // Fee Structure Services
 export const feeStructureServices = {
   // Get fee structures for a specific city
-  async getFeeStructuresByCity(city) {
+  // vehicleType: "van" | "car" (optional, only needed for vehicle-specific fees)
+  async getFeeStructuresByCity(city, vehicleType = null) {
     try {
       if (!city) {
         console.error('City is required to fetch fee structures');
@@ -503,7 +592,52 @@ export const feeStructureServices = {
       const feeStructureDoc = await getDoc(feeStructureRef);
 
       if (feeStructureDoc.exists()) {
-        return feeStructureDoc.data();
+        const feeStructure = feeStructureDoc.data();
+        
+        // If it's a vehicle-specific fee structure, return the appropriate vehicle type blocks
+        if (feeStructure.feeType === 'vehicle-specific') {
+          if (!vehicleType) {
+            // If vehicle type not provided, default to car and warn
+            console.warn('⚠️ Vehicle-specific fee structure found but vehicleType not provided, defaulting to car');
+            vehicleType = 'car';
+          }
+          
+          // Validate that vehicle-specific blocks exist
+          if (!feeStructure.blocks || typeof feeStructure.blocks !== 'object') {
+            console.error('❌ Invalid vehicle-specific fee structure: blocks must be an object with van and car arrays');
+            return null;
+          }
+          
+          // Return structure with appropriate vehicle-specific blocks
+          if (feeStructure.blocks[vehicleType] && Array.isArray(feeStructure.blocks[vehicleType]) && feeStructure.blocks[vehicleType].length > 0) {
+            console.log(`✅ Returning ${vehicleType} fee structure for ${city}`);
+            return {
+              ...feeStructure,
+              blocks: feeStructure.blocks[vehicleType],
+              averageHourlyEarnings: feeStructure.averageHourlyEarnings?.[vehicleType] || feeStructure.averageHourlyEarnings,
+              averagePerTaskEarnings: feeStructure.averagePerTaskEarnings?.[vehicleType] || feeStructure.averagePerTaskEarnings,
+              vehicleType: vehicleType // Include vehicle type in response for reference
+            };
+          } else {
+            // Fallback to car if vehicle type blocks not found
+            console.warn(`⚠️ Vehicle-specific blocks for ${vehicleType} not found or empty, falling back to car`);
+            if (feeStructure.blocks?.car && Array.isArray(feeStructure.blocks.car) && feeStructure.blocks.car.length > 0) {
+              return {
+                ...feeStructure,
+                blocks: feeStructure.blocks.car,
+                averageHourlyEarnings: feeStructure.averageHourlyEarnings?.car || feeStructure.averageHourlyEarnings,
+                averagePerTaskEarnings: feeStructure.averagePerTaskEarnings?.car || feeStructure.averagePerTaskEarnings,
+                vehicleType: 'car'
+              };
+            } else {
+              console.error(`❌ No valid vehicle-specific blocks found for ${city}. Both van and car blocks are required.`);
+              return null;
+            }
+          }
+        }
+        
+        // For general fee structures or backward compatibility, return as-is
+        return feeStructure;
       }
       
       console.warn(`No fee structure found for city: ${city}`);

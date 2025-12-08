@@ -4,20 +4,35 @@ import { useAuth } from "@/context/AuthContext";
 import PageLayout from "@/components/PageLayout";
 import Button from "@/components/Button";
 import { Button as UIButton } from "@/components/ui/button";
+import CheckboxWithLabel from "@/components/CheckboxWithLabel";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { feeStructureServices, acknowledgementServices } from "@/lib/firebase-services";
+import { getVehicleTypeFromMOT } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { useMinimumReadTime } from "@/hooks/useMinimumReadTime";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const FeeStructure = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { updateUserData, isLoading, currentUser } = useAuth();
+  const { updateUserData, isLoading, currentUser, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const [feeStructures, setFeeStructures] = useState(null);
   const [loadingFeeStructures, setLoadingFeeStructures] = useState(true);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [feeStructureAcknowledged, setFeeStructureAcknowledged] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   // Fee structure has more content, so require 45 seconds minimum read time
   const { canProceed, timeRemaining } = useMinimumReadTime(45);
 
@@ -39,18 +54,35 @@ const FeeStructure = () => {
     averagePerTaskEarnings: "£4.50–£6.50"
   };
 
-  // Fetch fee structures based on user's city
+  // Fetch fee structures based on user's city and vehicle type
   useEffect(() => {
     const fetchFeeStructures = async () => {
       try {
         // Get city from user data (could be from fountainData or city field)
         const city = currentUser?.fountainData?.city || currentUser?.city;
         
+        // Extract vehicle type from MOT data with debug logging
+        const vehicleType = getVehicleTypeFromMOT(currentUser?.fountainData, true);
+        
+        // Comprehensive logging for validation
         console.log('🏙️ FeeStructure - Current User:', {
           hasUser: !!currentUser,
           fountainCity: currentUser?.fountainData?.city,
           directCity: currentUser?.city,
-          selectedCity: city
+          selectedCity: city,
+          vehicleType: vehicleType,
+          // MOT data validation
+          hasFountainData: !!currentUser?.fountainData,
+          hasData: !!currentUser?.fountainData?.data,
+          hasMot: !!currentUser?.fountainData?.data?.mot,
+          motValue: currentUser?.fountainData?.data?.mot,
+          // Alternative paths
+          vehicleTypeDirect: currentUser?.fountainData?.vehicle_type,
+          vehicleField: currentUser?.fountainData?.vehicle,
+          dataVehicleType: currentUser?.fountainData?.data?.vehicle_type,
+          // Structure info (limited to avoid huge logs)
+          fountainDataKeys: currentUser?.fountainData ? Object.keys(currentUser.fountainData).slice(0, 10) : [],
+          dataKeys: currentUser?.fountainData?.data ? Object.keys(currentUser.fountainData.data).slice(0, 10) : []
         });
         
         if (!city) {
@@ -60,18 +92,38 @@ const FeeStructure = () => {
           return;
         }
 
-        console.log(`🔍 Fetching fee structures for: ${city}`);
-        const structures = await feeStructureServices.getFeeStructuresByCity(city);
+        console.log(`🔍 Fetching fee structures for: ${city} (vehicle type: ${vehicleType})`);
+        const structures = await feeStructureServices.getFeeStructuresByCity(city, vehicleType);
         
         // If no structure found for the city, use default
         if (!structures) {
           console.warn(`⚠️ No fee structure found for ${city}, using default`);
           setFeeStructures(defaultFeeStructure);
         } else {
+          // Check if vehicle-specific fees require MOT data (check multiple paths like the helper function)
+          if (structures.feeType === 'vehicle-specific') {
+            const hasMotData = !!(
+              currentUser?.fountainData?.data?.mot ||
+              currentUser?.fountainData?.mot ||
+              currentUser?.fountainData?.applicant?.data?.mot ||
+              currentUser?.fountainData?.vehicle_type ||
+              currentUser?.fountainData?.data?.vehicle_type ||
+              currentUser?.fountainData?.vehicle
+            );
+            
+            if (!hasMotData) {
+              console.warn('⚠️ Vehicle-specific fee structure found but MOT/vehicle data is missing. Using determined vehicle type as fallback.');
+            } else {
+              console.log(`✅ Vehicle-specific fee structure loaded with vehicle type: ${vehicleType}`);
+            }
+          }
+          
           console.log(`✅ Fee structure loaded for ${city}:`, {
             currency: structures.currency,
+            feeType: structures.feeType || 'general',
             blocksCount: structures.blocks?.length,
-            blocks: structures.blocks
+            blocks: structures.blocks,
+            vehicleType: structures.vehicleType || 'general'
           });
           setFeeStructures(structures);
         }
@@ -83,16 +135,41 @@ const FeeStructure = () => {
       }
     };
 
-    if (currentUser) {
+    // Only fetch if user is authenticated and not loading, and currentUser exists
+    if (isAuthenticated && !isLoading && currentUser) {
       fetchFeeStructures();
-    } else {
-      console.log('⚠️ No current user, using default structure');
+    } else if (!isLoading && !isAuthenticated) {
+      // User is not authenticated and not loading - use default
+      console.log('⚠️ No current user (not authenticated), using default structure');
       setFeeStructures(defaultFeeStructure);
       setLoadingFeeStructures(false);
+    } else if (isLoading) {
+      // Still loading - keep loading state
+      console.log('⏳ Still loading user data...');
+    } else if (isAuthenticated && !currentUser) {
+      // Authenticated but currentUser not loaded yet - wait for it
+      console.log('⏳ Authenticated but user data not loaded yet, waiting...');
+    }
+  }, [currentUser, isLoading, isAuthenticated]);
+
+  // Load existing acknowledgement status
+  useEffect(() => {
+    if (currentUser?.feeStructureAcknowledged || currentUser?.acknowledgedFeeStructure) {
+      setFeeStructureAcknowledged(true);
     }
   }, [currentUser]);
 
-  const handleHappy = async () => {
+  const handleContinue = async () => {
+    if (!feeStructureAcknowledged) {
+      toast({
+        title: "Confirmation Required",
+        description: "Please acknowledge that you understand the fee structure.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSaving(true);
     try {
       const now = new Date().toISOString();
       const dataToSave = {
@@ -127,6 +204,8 @@ const FeeStructure = () => {
         description: "Unable to save acknowledgement. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -351,6 +430,16 @@ const FeeStructure = () => {
             </div>
           )}
 
+          {searchParams.get('from') !== 'summary' && (
+            <div className="w-full max-w-2xl mb-6">
+              <CheckboxWithLabel
+                label="I'm happy with the fee structure"
+                checked={feeStructureAcknowledged}
+                onChange={setFeeStructureAcknowledged}
+              />
+            </div>
+          )}
+
           {searchParams.get('from') !== 'summary' && !canProceed && (
             <div className="w-full max-w-xl text-center mb-4">
               <p className="text-sm text-muted-foreground">
@@ -372,20 +461,40 @@ const FeeStructure = () => {
           ) : (
             <div className="flex w-full max-w-xl flex-col gap-3 sm:flex-row sm:justify-center">
               <Button
-                onClick={handleHappy}
+                onClick={handleContinue}
                 className="w-full sm:w-auto"
-                disabled={isLoading || loadingFeeStructures || !canProceed}
+                disabled={isSaving || isLoading || loadingFeeStructures || !canProceed || !feeStructureAcknowledged}
               >
-                {isLoading ? "Completing..." : "I'm Happy with the Pay Structure"}
+                {isSaving ? "Saving..." : "Continue"}
               </Button>
-              <Button
-                onClick={handleWithdraw}
-                className=" text-white w-full sm:w-auto bg-laundryheap-Red hover:bg-opacity-90"
-                disabled={isLoading || loadingFeeStructures || isWithdrawing}
-                showArrow={false}
-              >
-                {isWithdrawing ? "Processing..." : "Withdraw my Application"}
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    className=" text-white w-full sm:w-auto bg-laundryheap-Red hover:bg-opacity-90"
+                    disabled={isSaving || isLoading || loadingFeeStructures || isWithdrawing}
+                    showArrow={false}
+                  >
+                    {isWithdrawing ? "Processing..." : "Withdraw my Application"}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="z-[200]">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Withdraw Application</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to withdraw your application? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleWithdraw}
+                      className="bg-laundryheap-Red hover:bg-laundryheap-Red text-white"
+                    >
+                      Withdraw Application
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           )}
         </div>

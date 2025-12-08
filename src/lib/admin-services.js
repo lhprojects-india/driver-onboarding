@@ -11,7 +11,8 @@ import {
   orderBy,
   where
 } from 'firebase/firestore';
-import { db } from './firebase';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions } from './firebase';
 
 // Collection names
 const COLLECTIONS = {
@@ -618,6 +619,42 @@ export const adminServices = {
     } catch (error) {
       console.error('Error deleting facility:', error);
       return false;
+    }
+  },
+
+  // List all collections in the database
+  async listCollections() {
+    try {
+      const listCollectionsFn = httpsCallable(functions, 'listCollections');
+      const result = await listCollectionsFn();
+      return result.data;
+    } catch (error) {
+      console.error('Error listing collections:', error);
+      throw error;
+    }
+  },
+
+  // Initialize required collections
+  async initializeCollections() {
+    try {
+      const initializeCollectionsFn = httpsCallable(functions, 'initializeCollections');
+      const result = await initializeCollectionsFn();
+      return result.data;
+    } catch (error) {
+      console.error('Error initializing collections:', error);
+      throw error;
+    }
+  },
+
+  // Clean up placeholder documents
+  async cleanupPlaceholders() {
+    try {
+      const cleanupPlaceholdersFn = httpsCallable(functions, 'cleanupPlaceholders');
+      const result = await cleanupPlaceholdersFn();
+      return result.data;
+    } catch (error) {
+      console.error('Error cleaning up placeholders:', error);
+      throw error;
     }
   }
 };
