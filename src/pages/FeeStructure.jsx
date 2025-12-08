@@ -64,26 +64,6 @@ const FeeStructure = () => {
         // Extract vehicle type from MOT data with debug logging
         const vehicleType = getVehicleTypeFromMOT(currentUser?.fountainData, true);
         
-        // Comprehensive logging for validation
-        console.log('🏙️ FeeStructure - Current User:', {
-          hasUser: !!currentUser,
-          fountainCity: currentUser?.fountainData?.city,
-          directCity: currentUser?.city,
-          selectedCity: city,
-          vehicleType: vehicleType,
-          // MOT data validation
-          hasFountainData: !!currentUser?.fountainData,
-          hasData: !!currentUser?.fountainData?.data,
-          hasMot: !!currentUser?.fountainData?.data?.mot,
-          motValue: currentUser?.fountainData?.data?.mot,
-          // Alternative paths
-          vehicleTypeDirect: currentUser?.fountainData?.vehicle_type,
-          vehicleField: currentUser?.fountainData?.vehicle,
-          dataVehicleType: currentUser?.fountainData?.data?.vehicle_type,
-          // Structure info (limited to avoid huge logs)
-          fountainDataKeys: currentUser?.fountainData ? Object.keys(currentUser.fountainData).slice(0, 10) : [],
-          dataKeys: currentUser?.fountainData?.data ? Object.keys(currentUser.fountainData.data).slice(0, 10) : []
-        });
         
         if (!city) {
           console.warn('⚠️ No city found in user data, using default structure');
@@ -92,7 +72,6 @@ const FeeStructure = () => {
           return;
         }
 
-        console.log(`🔍 Fetching fee structures for: ${city} (vehicle type: ${vehicleType})`);
         const structures = await feeStructureServices.getFeeStructuresByCity(city, vehicleType);
         
         // If no structure found for the city, use default
@@ -113,18 +92,9 @@ const FeeStructure = () => {
             
             if (!hasMotData) {
               console.warn('⚠️ Vehicle-specific fee structure found but MOT/vehicle data is missing. Using determined vehicle type as fallback.');
-            } else {
-              console.log(`✅ Vehicle-specific fee structure loaded with vehicle type: ${vehicleType}`);
             }
           }
           
-          console.log(`✅ Fee structure loaded for ${city}:`, {
-            currency: structures.currency,
-            feeType: structures.feeType || 'general',
-            blocksCount: structures.blocks?.length,
-            blocks: structures.blocks,
-            vehicleType: structures.vehicleType || 'general'
-          });
           setFeeStructures(structures);
         }
       } catch (error) {
@@ -140,15 +110,8 @@ const FeeStructure = () => {
       fetchFeeStructures();
     } else if (!isLoading && !isAuthenticated) {
       // User is not authenticated and not loading - use default
-      console.log('⚠️ No current user (not authenticated), using default structure');
       setFeeStructures(defaultFeeStructure);
       setLoadingFeeStructures(false);
-    } else if (isLoading) {
-      // Still loading - keep loading state
-      console.log('⏳ Still loading user data...');
-    } else if (isAuthenticated && !currentUser) {
-      // Authenticated but currentUser not loaded yet - wait for it
-      console.log('⏳ Authenticated but user data not loaded yet, waiting...');
     }
   }, [currentUser, isLoading, isAuthenticated]);
 

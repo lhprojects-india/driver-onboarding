@@ -35,7 +35,6 @@ export function debugFountainDataStructure(fountainData, context = '') {
     applicantKeys: fountainData?.applicant ? Object.keys(fountainData.applicant).slice(0, 20) : [],
   };
   
-  console.log('🔍 Fountain Data Structure Debug:', debugInfo);
   return debugInfo;
 }
 
@@ -75,10 +74,6 @@ export function getVehicleTypeFromMOT(fountainData, debug = false) {
       const value = getPath();
       if (value) {
         mot = String(value).toLowerCase().trim();
-        if (debug) {
-          const pathName = getPath.toString().match(/fountainData[^)]*/)?.[0] || 'unknown';
-          console.log(`✅ Found vehicle data via ${pathName}:`, mot);
-        }
         break;
       }
     } catch (e) {
@@ -90,7 +85,6 @@ export function getVehicleTypeFromMOT(fountainData, debug = false) {
   if (mot) {
     // Van category - check for "van" (case-insensitive)
     if (mot.includes("van")) {
-      if (debug) console.log('✅ Vehicle type determined: van');
       return "van";
     }
     
@@ -109,13 +103,11 @@ export function getVehicleTypeFromMOT(fountainData, debug = false) {
       const normalizedMot = mot.replace(/[\s-]/g, "");
       const normalizedCarType = carType.replace(/[\s-]/g, "");
       if (normalizedMot.includes(normalizedCarType)) {
-        if (debug) console.log(`✅ Vehicle type determined: car (matched "${carType}")`);
         return "car";
       }
     }
     
     // If mot contains vehicle info but doesn't match specific types, default to car
-    if (debug) console.log('ℹ️ Vehicle data found but no specific match, defaulting to "car"');
     return "car";
   }
   

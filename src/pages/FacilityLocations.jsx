@@ -40,13 +40,6 @@ const FacilityLocations = () => {
 
       // Get city from user data (similar to FeeStructure page)
       const city = currentUser?.fountainData?.city || currentUser?.city;
-      
-      console.log('🏙️ FacilityLocations - Current User:', {
-        hasUser: !!currentUser,
-        fountainCity: currentUser?.fountainData?.city,
-        directCity: currentUser?.city,
-        selectedCity: city
-      });
 
       if (!city) {
         console.warn('⚠️ No city found in user data');
@@ -57,10 +50,8 @@ const FacilityLocations = () => {
 
       setLoadingFacilities(true);
       try {
-        console.log(`🔍 Fetching facilities for: ${city}`);
         const facilities = await facilityServices.getFacilitiesByCity(city);
         
-        console.log(`✅ Found ${facilities.length} facilities for ${city}:`, facilities);
         setCityFacilities(facilities);
 
         // Load existing facility selections if available

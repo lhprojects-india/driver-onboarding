@@ -30,7 +30,6 @@ const ProgressRedirect = ({ allowedRoutes = [] }) => {
 
     // Only redirect if not already on the correct route
     if (location.pathname !== nextRoute && nextRoute !== '/') {
-      console.log(`📍 Redirecting user to: ${nextRoute} (current: ${location.pathname})`);
       navigate(nextRoute, { replace: true });
     }
   }, [currentUser, isAuthenticated, isLoading, location.pathname, navigate, allowedRoutes]);

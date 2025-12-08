@@ -57,16 +57,6 @@ exports.verifyApplicantPhone = functions.https.onCall(async (data, context) => {
     const normalizedInputPhone = normalizePhone(phone);
     const normalizedStoredPhone = normalizePhone(storedPhone);
     
-    // Log for debugging
-    console.log('Phone verification:', {
-      email: normalizedEmail,
-      inputPhone: phone,
-      normalizedInput: normalizedInputPhone,
-      storedPhone: storedPhone,
-      normalizedStored: normalizedStoredPhone,
-      match: normalizedInputPhone === normalizedStoredPhone
-    });
-
     // Check if phone numbers match
     if (normalizedInputPhone === normalizedStoredPhone) {
       // Extract name from multiple possible locations (same pattern as phone)

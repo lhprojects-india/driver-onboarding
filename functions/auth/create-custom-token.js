@@ -50,7 +50,6 @@ exports.createCustomToken = functions.https.onCall(async (data, context) => {
           email: normalizedEmail,
           emailVerified: false,
         });
-        console.log(`✅ Updated Firebase Auth user with email: ${normalizedEmail}`);
       } catch (error) {
         if (error.code === 'auth/user-not-found') {
           // Create new user with email
@@ -59,7 +58,6 @@ exports.createCustomToken = functions.https.onCall(async (data, context) => {
             email: normalizedEmail,
             emailVerified: false,
           });
-          console.log(`✅ Created Firebase Auth user with email: ${normalizedEmail}`);
         } else {
           throw error;
         }
@@ -75,8 +73,6 @@ exports.createCustomToken = functions.https.onCall(async (data, context) => {
       role: 'driver',
     });
 
-    console.log(`✅ Custom token created for: ${normalizedEmail}`);
-
     // Create or update user in Firestore using admin privileges (bypasses security rules)
     try {
       const userRef = db.collection('drivers').doc(normalizedEmail);
@@ -91,13 +87,11 @@ exports.createCustomToken = functions.https.onCall(async (data, context) => {
           onboardingStatus: 'started',
           isActive: true,
         });
-        console.log(`✅ Created user record for: ${normalizedEmail}`);
       } else {
         // Update existing user
         await userRef.update({
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
-        console.log(`✅ Updated user record for: ${normalizedEmail}`);
       }
     } catch (userError) {
       console.warn('Warning: Could not create/update user record:', userError);

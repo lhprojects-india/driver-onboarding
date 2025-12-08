@@ -279,7 +279,6 @@ export const driverServices = {
         updatedAt: serverTimestamp(),
       }, { merge: true });
       
-      console.log('✅ Verification data saved:', email);
       return true;
     } catch (error) {
       console.error('❌ Error saving verification:', error);
@@ -309,25 +308,12 @@ export const driverServices = {
           (!userData.fountainData.applicant);
         
         if (needsEnrichment) {
-          console.log('🔍 FountainData needs enrichment, fetching from fountain_applicants...', {
-            email,
-            hasFountainData: !!userData.fountainData,
-            fountainDataKeys: Object.keys(userData.fountainData || {})
-          });
-          
           try {
             const fountainApplicantRef = doc(db, COLLECTIONS.FOUNTAIN_APPLICANTS, email);
             const fountainApplicantDoc = await getDoc(fountainApplicantRef);
             
             if (fountainApplicantDoc.exists()) {
               const fountainApplicantData = fountainApplicantDoc.data();
-              console.log('✅ Found fountain_applicants document:', {
-                hasFountainData: !!fountainApplicantData.fountainData,
-                hasData: !!fountainApplicantData.fountainData?.data,
-                hasApplicant: !!fountainApplicantData.fountainData?.applicant,
-                applicantDataMot: fountainApplicantData.fountainData?.applicant?.data?.mot,
-                fountainDataKeys: fountainApplicantData.fountainData ? Object.keys(fountainApplicantData.fountainData).slice(0, 10) : []
-              });
               
               // Merge the full fountainData if available
               if (fountainApplicantData.fountainData) {
@@ -356,13 +342,6 @@ export const driverServices = {
                   })
                 };
                 
-                console.log('✅ Merged fountainData:', {
-                  hasData: !!userData.fountainData.data,
-                  hasApplicant: !!userData.fountainData.applicant,
-                  applicantDataMot: userData.fountainData.applicant?.data?.mot,
-                  topLevelKeys: Object.keys(userData.fountainData).slice(0, 10)
-                });
-                
                 // Save enriched fountainData back to Firestore so it persists
                 // This prevents needing to fetch and merge on every getDriverData call
                 // Use setDoc with merge to handle complex nested structures
@@ -371,7 +350,6 @@ export const driverServices = {
                     fountainData: userData.fountainData,
                     updatedAt: serverTimestamp()
                   }, { merge: true });
-                  console.log('✅ Saved enriched fountainData back to Firestore');
                 } catch (saveError) {
                   console.error('⚠️ Could not save enriched fountainData:', saveError.message, saveError.code);
                   // Non-critical - continue with enriched data in memory
@@ -386,12 +364,6 @@ export const driverServices = {
             console.error('Error details:', error.message, error.code);
             // Continue with existing data
           }
-        } else {
-          console.log('ℹ️ FountainData already has full structure or no fountainData exists:', {
-            hasFountainData: !!userData.fountainData,
-            hasData: !!userData.fountainData?.data,
-            hasApplicant: !!userData.fountainData?.applicant
-          });
         }
         
         return userData;
@@ -610,7 +582,6 @@ export const feeStructureServices = {
           
           // Return structure with appropriate vehicle-specific blocks
           if (feeStructure.blocks[vehicleType] && Array.isArray(feeStructure.blocks[vehicleType]) && feeStructure.blocks[vehicleType].length > 0) {
-            console.log(`✅ Returning ${vehicleType} fee structure for ${city}`);
             return {
               ...feeStructure,
               blocks: feeStructure.blocks[vehicleType],

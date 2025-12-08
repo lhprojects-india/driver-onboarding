@@ -308,7 +308,6 @@ export const adminServices = {
       const reportRef = doc(db, COLLECTIONS.REPORTS, reportId);
       await setDoc(reportRef, report);
 
-      console.log('✅ Mock report created:', reportId);
       return reportId;
     } catch (error) {
       console.error('Error creating mock report:', error);
@@ -336,8 +335,6 @@ export const adminServices = {
   // Reset driver's onboarding progress (allows them to start over)
   async resetDriverProgress(email) {
     try {
-      console.log(`🔄 Resetting onboarding progress for: ${email}`);
-      
       // Update driver document - reset status but keep personal info and Fountain data
       const driverRef = doc(db, COLLECTIONS.DRIVERS, email);
       const driverDoc = await getDoc(driverRef);
@@ -396,7 +393,6 @@ export const adminServices = {
       ]);
       */
       
-      console.log(`✅ Successfully reset progress for: ${email}`);
       return { success: true, message: 'Driver progress reset successfully' };
     } catch (error) {
       console.error('Error resetting driver progress:', error);

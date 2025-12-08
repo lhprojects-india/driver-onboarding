@@ -34,8 +34,6 @@ exports.initializeCollections = onCall(async (request) => {
       throw new HttpsError("permission-denied", "Only admins can initialize collections");
     }
 
-    console.log(`Initializing collections requested by: ${userEmail}`);
-    
     const collections = [
       {
         name: 'fountain_applicants',
@@ -145,8 +143,6 @@ exports.cleanupPlaceholders = onCall(async (request) => {
       throw new HttpsError("permission-denied", "Only admins can cleanup placeholders");
     }
 
-    console.log(`Cleaning up placeholders requested by: ${userEmail}`);
-    
     const collections = ['fountain_applicants', 'onboarding', 'verification'];
     const results = [];
     let deletedCount = 0;

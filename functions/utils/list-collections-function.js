@@ -34,8 +34,6 @@ exports.listCollections = onCall(async (request) => {
       throw new HttpsError("permission-denied", "Only admins can list collections");
     }
 
-    console.log(`Listing collections requested by: ${userEmail}`);
-    
     // List all collections
     const collections = await db.listCollections();
     const collectionList = [];

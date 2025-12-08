@@ -101,8 +101,6 @@ exports.generateOnboardingReport = functions.https.onCall(async (data, context) 
     const reportRef = db.collection("reports").doc(report.reportId);
     await reportRef.set(report);
 
-    console.log("Generated onboarding report:", report.reportId);
-
     return {
       success: true,
       reportId: report.reportId,

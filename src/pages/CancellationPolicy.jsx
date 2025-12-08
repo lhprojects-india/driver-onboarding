@@ -49,11 +49,9 @@ const CancellationPolicy = () => {
         // Extract vehicle type from MOT data (same as FeeStructure page)
         const vehicleType = getVehicleTypeFromMOT(currentUser?.fountainData);
 
-        console.log(`🔍 Fetching fee structure for currency: ${city} (vehicle type: ${vehicleType})`);
         const structures = await feeStructureServices.getFeeStructuresByCity(city, vehicleType);
         
         if (structures?.currency) {
-          console.log(`✅ Currency loaded for ${city}: ${structures.currency}`);
           setCurrency(structures.currency);
         } else {
           console.warn(`⚠️ No currency found for ${city}, using default (£)`);

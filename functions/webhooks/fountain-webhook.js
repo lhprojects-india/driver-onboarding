@@ -12,13 +12,6 @@ exports.fountainWebhook = functions.https.onRequest(async (req, res) => {
   // Enable CORS
   return cors(req, res, async () => {
     try {
-      // Log the webhook call
-      console.log("Fountain webhook received", {
-        method: req.method,
-        headers: req.headers,
-        body: req.body,
-      });
-
       // Health check endpoint
       if (req.method === "GET") {
         return res.status(200).send("Fountain webhook is operational");
@@ -42,7 +35,6 @@ exports.fountainWebhook = functions.https.onRequest(async (req, res) => {
                        (functions.config && functions.config().fountain && functions.config().fountain.webhook_secret);
       } catch (error) {
         // functions.config() may not be available, that's OK - webhook stays open
-        console.log("Note: Webhook secret not configured, allowing open access");
       }
       
       if (webhookSecret) {
@@ -188,8 +180,6 @@ exports.fountainWebhook = functions.https.onRequest(async (req, res) => {
       // Store in the single fountain_applicants collection
       const docRef = db.collection(collectionName).doc(normalizedEmail);
 
-      console.log(`Storing applicant in collection: ${collectionName}`);
-
       // Check if applicant already exists
       const existingDoc = await docRef.get();
 
@@ -207,13 +197,9 @@ exports.fountainWebhook = functions.https.onRequest(async (req, res) => {
           createdAt: existingData?.createdAt || applicantData.createdAt, // Keep original creation time
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
-
-        console.log("Updated existing applicant:", normalizedEmail);
       } else {
         // Create new applicant record
         await docRef.set(applicantData);
-
-        console.log("Created new applicant:", normalizedEmail);
       }
 
       // Send success response
