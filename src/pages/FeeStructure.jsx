@@ -50,7 +50,7 @@ const FeeStructure = () => {
         density: "medium"
       }
     ],
-    averageHourlyEarnings: "£12.50–£18+",
+    averageHourlyEarnings: "£12.50–£18",
     averagePerTaskEarnings: "£4.50–£6.50"
   };
 
@@ -362,7 +362,7 @@ const FeeStructure = () => {
                 <span className="font-medium">Extra earnings:</span> More tasks = more pay.
               </div>
               <div className="rounded-md border p-4">
-                <span className="font-medium">Average hourly earnings:</span> {feeStructures?.averageHourlyEarnings || '£14–£20+'}
+                <span className="font-medium">Average hourly earnings:</span> {feeStructures?.averageHourlyEarnings || '£14–£20'}
               </div>
               <div className="rounded-md border p-4">
                 <span className="font-medium">Average per-task earnings:</span> {feeStructures?.averagePerTaskEarnings || '£4.50–£6.50'}

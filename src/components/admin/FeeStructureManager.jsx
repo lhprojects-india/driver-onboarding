@@ -372,7 +372,7 @@ export default function FeeStructureManager() {
     const minAvg = hourlyRates.reduce((sum, rate) => sum + rate.min, 0) / hourlyRates.length;
     const maxAvg = hourlyRates.reduce((sum, rate) => sum + rate.max, 0) / hourlyRates.length;
 
-    return `${currencySymbol}${minAvg.toFixed(2)}–${currencySymbol}${maxAvg.toFixed(2)}+`;
+    return `${currencySymbol}${minAvg.toFixed(2)}–${currencySymbol}${maxAvg.toFixed(2)}`;
   };
 
   // Calculate average per task earnings from blocks

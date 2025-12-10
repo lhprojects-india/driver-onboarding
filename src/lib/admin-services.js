@@ -29,41 +29,123 @@ const COLLECTIONS = {
 
 // Admin Services
 export const adminServices = {
-  // Get all applications (drivers)
+  // Get all applications (show all fountain_applicants)
   async getAllApplications() {
     try {
-      const driversRef = collection(db, COLLECTIONS.DRIVERS);
-      const querySnapshot = await getDocs(driversRef);
+      // Query fountain_applicants collection (source of truth)
+      const fountainApplicantsRef = collection(db, COLLECTIONS.FOUNTAIN_APPLICANTS);
+      const fountainQuerySnapshot = await getDocs(fountainApplicantsRef);
       const applications = [];
 
-      for (const docSnapshot of querySnapshot.docs) {
-        const driverData = docSnapshot.data();
-        const email = docSnapshot.id;
+      for (const fountainDoc of fountainQuerySnapshot.docs) {
+        const fountainData = fountainDoc.data();
+        const normalizedEmail = fountainDoc.id; // Already lowercase in fountain_applicants
+        
+        // Try to get driver data if it exists (optional - for onboarding progress)
+        // Try both normalized and original email format in drivers (in case of case mismatch)
+        const driverRef = doc(db, COLLECTIONS.DRIVERS, normalizedEmail);
+        let driverDoc = null;
+        let driverData = {};
+        let driverEmail = normalizedEmail;
+        
+        try {
+          driverDoc = await getDoc(driverRef);
+          
+          // If not found with normalized email, try with the email from fountain data
+          if (!driverDoc.exists() && fountainData.email && fountainData.email !== normalizedEmail) {
+            const driverRefOriginal = doc(db, COLLECTIONS.DRIVERS, fountainData.email);
+            const driverDocOriginal = await getDoc(driverRefOriginal);
+            if (driverDocOriginal.exists()) {
+              driverDoc = driverDocOriginal;
+              driverEmail = fountainData.email;
+            }
+          }
+          
+          if (driverDoc?.exists()) {
+            driverData = driverDoc.data();
+            driverEmail = driverDoc.id; // Use the actual document ID from drivers
+          }
+        } catch (error) {
+          console.error(`Error checking drivers for ${normalizedEmail}:`, error);
+          // Continue even if driver data check fails
+        }
 
-        // Get additional data from other collections
+        // Get additional data from other collections (use driverEmail if available, otherwise normalizedEmail)
+        const emailToUse = driverEmail || normalizedEmail;
         const [availabilityData, verificationData, reportData] = await Promise.all([
-          this.getAvailabilityData(email),
-          this.getVerificationData(email),
-          this.getReportByEmail(email)
+          this.getAvailabilityData(emailToUse),
+          this.getVerificationData(emailToUse),
+          this.getReportByEmail(emailToUse)
         ]);
 
+        // Merge fountain_applicants data with optional drivers data
         applications.push({
-          id: email,
-          email: email,
+          id: normalizedEmail,
+          email: normalizedEmail,
+          // Fountain data (primary source)
+          ...fountainData,
+          // Driver data (onboarding progress, status, etc.) - only if exists
           ...driverData,
+          // Ensure email is set correctly
+          email: normalizedEmail,
+          // Additional collections data
           availability: availabilityData,
           verification: verificationData,
           report: reportData,
-          createdAt: driverData.createdAt?.toDate?.() || new Date(),
-          updatedAt: driverData.updatedAt?.toDate?.() || new Date(),
+          // Use fountain createdAt if available, otherwise driver createdAt
+          createdAt: fountainData.createdAt?.toDate?.() || driverData.createdAt?.toDate?.() || new Date(),
+          updatedAt: driverData.updatedAt?.toDate?.() || fountainData.updatedAt?.toDate?.() || new Date(),
         });
       }
 
-      // Sort by creation date (newest first)
-      return applications.sort((a, b) => b.createdAt - a.createdAt);
+      console.log(`[Admin] Found ${applications.length} applicants from fountain_applicants`);
+
+      // Sort by creation date (newest first) - using fountain_applicants creation date
+      return applications.sort((a, b) => {
+        const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+        const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
+        return dateB - dateA;
+      });
     } catch (error) {
       console.error('Error getting all applications:', error);
       return [];
+    }
+  },
+
+  // Debug helper: Check if a specific email exists in both collections (prioritizing fountain_applicants)
+  async checkEmailInBothCollections(email) {
+    try {
+      const normalizedEmail = email.toLowerCase().trim();
+      
+      // Check fountain_applicants first (prioritized)
+      const fountainDoc = await getDoc(doc(db, COLLECTIONS.FOUNTAIN_APPLICANTS, normalizedEmail));
+      
+      // Check drivers with both normalized and original email
+      const driverDocNormalized = await getDoc(doc(db, COLLECTIONS.DRIVERS, normalizedEmail));
+      const driverDocOriginal = email !== normalizedEmail 
+        ? await getDoc(doc(db, COLLECTIONS.DRIVERS, email))
+        : null;
+
+      const driverDoc = driverDocNormalized.exists() ? driverDocNormalized : driverDocOriginal;
+      const inDrivers = driverDocNormalized.exists() || (driverDocOriginal?.exists() ?? false);
+
+      return {
+        email,
+        normalizedEmail,
+        inFountainApplicants: fountainDoc.exists(),
+        inDrivers,
+        inBoth: fountainDoc.exists() && inDrivers,
+        fountainDocId: fountainDoc.exists() ? normalizedEmail : null,
+        driverDocId: driverDocNormalized.exists() ? normalizedEmail : (driverDocOriginal?.exists() ? email : null),
+        fountainData: fountainDoc.exists() ? fountainDoc.data() : null,
+        driverData: driverDoc?.exists() ? driverDoc.data() : null
+      };
+    } catch (error) {
+      console.error('Error checking email in collections:', error);
+      return {
+        email,
+        error: error.message
+      };
     }
   },
 

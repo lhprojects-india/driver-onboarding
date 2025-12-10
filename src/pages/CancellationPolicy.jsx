@@ -168,37 +168,37 @@ const CancellationPolicy = () => {
                 <div>
                   <p className="font-semibold mb-2">48-Hour Rule</p>
                   <p className="ml-4">
-                    Release your block at least 48 hours before it starts to avoid the full fee.
+                    You must release your block at least 48 hours before the start time to avoid being charged the full block fee as a cancellation fee.
                   </p>
                 </div>
                 
                 <div>
                   <p className="font-semibold mb-2">Fees</p>
                   <p className="ml-4">
-                    • Release 48+ hours early: 10% fee
+                    Release with 48+ hours' notice: 10% block release fee will be charged
                   </p>
                   <p className="ml-4">
-                    • Release less than 48 hours: Full block fee
+                    Release with less than 48 hours' notice: Full block fee charged as a cancellation fee
                   </p>
                 </div>
                 
                 <div>
                   <p className="font-semibold mb-2">Example</p>
                   <p className="ml-4 mb-1">
-                    Block: 16th January at 5:00 PM ({currency}100)
+                    Block Date: 16th January at 5:00 PM ({currency}100)
                   </p>
                   <p className="ml-4 mb-1">
-                    Release before 14th January 5:00 PM → {currency}10 fee
+                    Released before 14th January, 5:00 PM → {currency}10 charged as block release fee
                   </p>
                   <p className="ml-4">
-                    Release after 14th January 5:00 PM → {currency}100 fee
+                    Released after 14th January, 5:00 PM → {currency}100 charged as cancellation fee
                   </p>
                 </div>
                 
                 <div>
                   <p className="font-semibold mb-2">Why This Matters</p>
                   <p className="ml-4">
-                    Releasing blocks early helps us reassign slots and ensures customers get consistent service.
+                    Releasing blocks early helps the team reassign the slot smoothly, ensuring customers receive consistent service — and it helps everyone avoid unnecessary delays.
                   </p>
                 </div>
               </div>
