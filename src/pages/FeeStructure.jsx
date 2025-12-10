@@ -213,6 +213,12 @@ const FeeStructure = () => {
     return feeStructures.currency || '£';
   };
 
+  // Helper function to remove trailing '+' from earnings strings
+  const cleanEarningsString = (earnings) => {
+    if (!earnings || typeof earnings !== 'string') return earnings;
+    return earnings.replace(/\+\s*$/, '').trim();
+  };
+
   // Calculate example earnings
   const calculateExample = (block) => {
     if (!block) return null;
@@ -362,10 +368,10 @@ const FeeStructure = () => {
                 <span className="font-medium">Extra earnings:</span> More tasks = more pay.
               </div>
               <div className="rounded-md border p-4">
-                <span className="font-medium">Average hourly earnings:</span> {feeStructures?.averageHourlyEarnings || '£14–£20'}
+                <span className="font-medium">Average hourly earnings:</span> {cleanEarningsString(feeStructures?.averageHourlyEarnings) || '£14–£20'}
               </div>
               <div className="rounded-md border p-4">
-                <span className="font-medium">Average per-task earnings:</span> {feeStructures?.averagePerTaskEarnings || '£4.50–£6.50'}
+                <span className="font-medium">Average per-task earnings:</span> {cleanEarningsString(feeStructures?.averagePerTaskEarnings) || '£4.50–£6.50'}
               </div>
             </CardContent>
           </Card>

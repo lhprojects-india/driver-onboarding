@@ -20,4 +20,10 @@ export default defineConfig(({ mode }) => ({
     },
     extensions: ['.js', '.jsx'],
   },
+  build: {
+    target: ['es2020', 'edge90', 'firefox88', 'chrome90', 'safari14'],
+    minify: 'esbuild',
+    cssCodeSplit: true,
+    sourcemap: false,
+  },
 }));

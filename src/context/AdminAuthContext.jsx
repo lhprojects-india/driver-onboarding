@@ -133,10 +133,28 @@ export function AdminAuthProvider({ children }) {
     };
   }, [toast, isAdminRoute, location.pathname]);
 
-  // Check if email is authorized (using local config)
+  // Check if email is authorized (check Firestore first, fallback to local config)
   const checkAdminAuthorization = async (email) => {
+    if (!email) return false;
+    
     try {
-      // Use local configuration instead of Firestore to avoid permissions issues
+      const normalizedEmail = email.toLowerCase().trim();
+      
+      // First, check Firestore authorized_emails collection
+      try {
+        const authorizedEmailRef = doc(db, 'authorized_emails', normalizedEmail);
+        const authorizedEmailDoc = await getDoc(authorizedEmailRef);
+        
+        if (authorizedEmailDoc.exists()) {
+          // Email found in Firestore - authorized
+          return true;
+        }
+      } catch (firestoreError) {
+        // If Firestore check fails (e.g., permission denied), fall back to local config
+        console.warn('Could not check Firestore authorized_emails, falling back to local config:', firestoreError);
+      }
+      
+      // Fallback to local configuration for backwards compatibility
       const authorized = isAuthorizedAdmin(email);
       return authorized;
     } catch (error) {

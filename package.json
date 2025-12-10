@@ -83,5 +83,16 @@
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.11",
     "vite": "^5.4.1"
-  }
+  },
+  "browserslist": [
+    "defaults",
+    "not IE 11",
+    "not dead",
+    "> 0.2%",
+    "last 2 versions",
+    "Chrome >= 90",
+    "Firefox >= 88",
+    "Safari >= 14",
+    "Edge >= 90"
+  ]
 }

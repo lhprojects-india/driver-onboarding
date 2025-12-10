@@ -12,6 +12,7 @@ export const AUTHORIZED_ADMIN_EMAILS = [
   'admin@laundryheap.com',
   'bharath@laundryheap.com',
   'sudhanva@laundryheap.com',
+  'mohammed.raquib@laundryheap.com',
   // Add more authorized emails here
 ];
 

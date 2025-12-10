@@ -46,6 +46,16 @@ const getDisplayCurrency = (currency) => {
   return getCurrencySymbol(normalizeCurrency(currency));
 };
 
+// Helper function to remove trailing '+' from earnings strings
+const cleanEarningsString = (earnings) => {
+  if (!earnings) return earnings;
+  if (typeof earnings === 'string') {
+    return earnings.replace(/\+\s*$/, '').trim();
+  }
+  // If it's an object (for vehicle-specific), return as-is (will be handled per property)
+  return earnings;
+};
+
 export default function FeeStructureManager() {
   const { toast } = useToast();
   const [feeStructures, setFeeStructures] = useState({});
@@ -214,12 +224,12 @@ export default function FeeStructureManager() {
             car: formData.vehicleBlocks.car
           },
           averageHourlyEarnings: {
-            van: vanHourly,
-            car: carHourly
+            van: cleanEarningsString(vanHourly),
+            car: cleanEarningsString(carHourly)
           },
           averagePerTaskEarnings: {
-            van: vanPerTask,
-            car: carPerTask
+            van: cleanEarningsString(vanPerTask),
+            car: cleanEarningsString(carPerTask)
           }
         };
       } else {
@@ -229,8 +239,8 @@ export default function FeeStructureManager() {
           feeType: 'general',
           currency: getCurrencySymbol(formData.currency),
           blocks: formData.blocks,
-          averageHourlyEarnings: formData.averageHourlyEarnings,
-          averagePerTaskEarnings: formData.averagePerTaskEarnings
+          averageHourlyEarnings: cleanEarningsString(formData.averageHourlyEarnings),
+          averagePerTaskEarnings: cleanEarningsString(formData.averagePerTaskEarnings)
         };
       }
 
@@ -879,16 +889,16 @@ export default function FeeStructureManager() {
                       {structure.feeType === 'vehicle-specific' ? (
                         <>
                           <span>•</span>
-                          <span>Van Hourly: <strong>{structure.averageHourlyEarnings?.van || 'N/A'}</strong></span>
+                          <span>Van Hourly: <strong>{cleanEarningsString(structure.averageHourlyEarnings?.van) || 'N/A'}</strong></span>
                           <span>•</span>
-                          <span>Car Hourly: <strong>{structure.averageHourlyEarnings?.car || 'N/A'}</strong></span>
+                          <span>Car Hourly: <strong>{cleanEarningsString(structure.averageHourlyEarnings?.car) || 'N/A'}</strong></span>
                         </>
                       ) : (
                         <>
                           <span>•</span>
-                          <span>Hourly: <strong>{structure.averageHourlyEarnings}</strong></span>
+                          <span>Hourly: <strong>{cleanEarningsString(structure.averageHourlyEarnings)}</strong></span>
                           <span>•</span>
-                          <span>Per Task: <strong>{structure.averagePerTaskEarnings}</strong></span>
+                          <span>Per Task: <strong>{cleanEarningsString(structure.averagePerTaskEarnings)}</strong></span>
                         </>
                       )}
                     </span>

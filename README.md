@@ -22,6 +22,55 @@ This application follows a complete workflow:
 - **Responsive Design** - Mobile-first responsive layout with Tailwind CSS
 - **Progress Tracking** - Step-by-step progress saving
 
+## Browser Support
+
+This application is tested and supported on the following browsers:
+
+### ✅ Fully Supported Browsers
+
+- **Google Chrome** (version 90 and above) - Recommended
+- **Mozilla Firefox** (version 88 and above)
+- **Microsoft Edge** (version 90 and above)
+- **Safari** (version 14 and above) - macOS and iOS
+- **Opera** (version 76 and above)
+
+### ⚠️ Limited Support / Known Issues
+
+- **Brave Browser** - May experience issues due to privacy shields blocking Firebase and third-party services
+  - **Solution**: Disable Brave Shields for this application
+    - Click the Brave Shields icon in the address bar
+    - Toggle "Shields" to "Down" for this site
+    - Refresh the page
+  - **Alternative**: Use Chrome, Firefox, Edge, or Safari for optimal experience
+
+### ❌ Unsupported Browsers
+
+- Internet Explorer 11 and below
+- Legacy browsers without ES2020 support
+- Browsers without JavaScript enabled
+
+### Browser Requirements
+
+- JavaScript must be enabled
+- Cookies and LocalStorage must be enabled (required for Firebase authentication)
+- Third-party cookies may be required for Firebase services
+- Modern ES2020+ JavaScript support
+
+### Troubleshooting Browser Issues
+
+If you experience issues with the application:
+
+1. **Clear browser cache and cookies** for this site
+2. **Disable browser extensions** that may interfere (ad blockers, privacy tools)
+3. **Check browser console** for error messages (F12 → Console tab)
+4. **Ensure JavaScript is enabled** in browser settings
+5. **Try a different supported browser** if issues persist
+
+For Brave Browser specifically:
+- Disable Brave Shields for the application domain
+- Allow third-party cookies for Firebase services
+- Disable aggressive privacy settings that may block Firebase requests
+
 ## Setup Instructions
 
 ### 1. Firebase Configuration
