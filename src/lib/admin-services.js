@@ -24,7 +24,8 @@ const COLLECTIONS = {
   REPORTS: 'reports',
   FEE_STRUCTURES: 'fee_structures',
   FACILITIES: 'facilities',
-  AUTHORIZED_EMAILS: 'authorized_emails'
+  AUTHORIZED_EMAILS: 'authorized_emails',
+  ADMINS: 'admins'
 };
 
 // Admin Services
@@ -98,8 +99,6 @@ export const adminServices = {
         });
       }
 
-      console.log(`[Admin] Found ${applications.length} applicants from fountain_applicants`);
-
       // Sort by creation date (newest first) - using fountain_applicants creation date
       return applications.sort((a, b) => {
         const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
@@ -107,7 +106,6 @@ export const adminServices = {
         return dateB - dateA;
       });
     } catch (error) {
-      console.error('Error getting all applications:', error);
       return [];
     }
   },
@@ -160,7 +158,6 @@ export const adminServices = {
       }
       return null;
     } catch (error) {
-      console.error('Error getting availability data:', error);
       return null;
     }
   },
@@ -176,7 +173,6 @@ export const adminServices = {
       }
       return null;
     } catch (error) {
-      console.error('Error getting verification data:', error);
       return null;
     }
   },
@@ -199,7 +195,6 @@ export const adminServices = {
       }
       return null;
     } catch (error) {
-      console.error('Error getting report by email:', error);
       return null;
     }
   },
@@ -215,7 +210,6 @@ export const adminServices = {
       }
       return null;
     } catch (error) {
-      console.error('Error getting report by reportId:', error);
       return null;
     }
   },
@@ -241,7 +235,6 @@ export const adminServices = {
         return dateB - dateA;
       });
     } catch (error) {
-      console.error('Error getting all reports:', error);
       return [];
     }
   },
@@ -255,6 +248,10 @@ export const adminServices = {
       const driverRef = doc(db, COLLECTIONS.DRIVERS, email);
       const driverSnap = await getDoc(driverRef);
       const driverRecord = driverSnap.exists() ? driverSnap.data() : (driverData || {});
+        blocksClassificationAcknowledged: driverRecord.blocksClassificationAcknowledged,
+        roleUnderstood: driverRecord.roleUnderstood,
+        roleAcknowledged: driverRecord.roleAcknowledged,
+      });
 
       // Get additional data
       const [availabilityData, verificationData] = await Promise.all([
@@ -301,73 +298,87 @@ export const adminServices = {
         availability: availabilityData?.availability || null,
 
         // Acknowledgements (support multiple field names used in the app)
+        // Check all possible field name variations to ensure we catch all acknowledgements
         acknowledgements: {
           // Role
-          role: (
-            driverRecord.roleUnderstood === true ||
-            driverData?.roleUnderstood === true
-          ) || false,
+          role: !!(
+            driverRecord.roleUnderstood ||
+            driverRecord.roleAcknowledged ||
+            driverRecord?.progress_role?.confirmed ||
+            driverData?.roleUnderstood ||
+            driverData?.roleAcknowledged ||
+            driverData?.progress_role?.confirmed
+          ),
           roleDate: (
             driverRecord.roleUnderstoodAt ||
-            driverData?.roleUnderstoodAt || null
+            driverRecord.roleAcknowledgedAt ||
+            driverRecord?.progress_role?.confirmedAt ||
+            driverData?.roleUnderstoodAt ||
+            driverData?.roleAcknowledgedAt ||
+            driverData?.progress_role?.confirmedAt ||
+            null
           ),
           // Block Classification
-          blockClassification: (
-            driverRecord.blocksClassificationAcknowledged === true ||
-            driverData?.blocksClassificationAcknowledged === true
-          ) || false,
+          blockClassification: !!(
+            driverRecord.blocksClassificationAcknowledged ||
+            driverData?.blocksClassificationAcknowledged
+          ),
           blockClassificationDate: (
             driverRecord.blocksClassificationAcknowledgedAt ||
             driverData?.blocksClassificationAcknowledgedAt || null
           ),
           // Fee structure
-          feeStructure: (
-            driverRecord.acknowledgedFeeStructure === true ||
-            driverRecord.feeStructureAcknowledged === true ||
-            driverData?.acknowledgedFeeStructure === true ||
-            driverData?.feeStructureAcknowledged === true
-          ) || false,
+          feeStructure: !!(
+            driverRecord.acknowledgedFeeStructure ||
+            driverRecord.feeStructureAcknowledged ||
+            driverData?.acknowledgedFeeStructure ||
+            driverData?.feeStructureAcknowledged
+          ),
           feeStructureDate: (
             driverRecord.feeStructureAcknowledgedAt ||
             driverData?.feeStructureAcknowledgedAt || null
           ),
           // Routes Policy
-          routesPolicy: (
-            driverRecord.routesPolicyAcknowledged === true ||
-            driverData?.routesPolicyAcknowledged === true
-          ) || false,
+          routesPolicy: !!(
+            driverRecord.routesPolicyAcknowledged ||
+            driverData?.routesPolicyAcknowledged
+          ),
           routesPolicyDate: (
             driverRecord.routesPolicyAcknowledgedAt ||
             driverData?.routesPolicyAcknowledgedAt || null
           ),
           // Cancellation policy
-          cancellationPolicy: (
-            driverRecord.acknowledgedCancellationPolicy === true ||
-            driverRecord.cancellationPolicyAcknowledged === true ||
-            driverData?.acknowledgedCancellationPolicy === true ||
-            driverData?.cancellationPolicyAcknowledged === true
-          ) || false,
+          cancellationPolicy: !!(
+            driverRecord.acknowledgedCancellationPolicy ||
+            driverRecord.cancellationPolicyAcknowledged ||
+            driverData?.acknowledgedCancellationPolicy ||
+            driverData?.cancellationPolicyAcknowledged
+          ),
           cancellationPolicyDate: (
             driverRecord.cancellationPolicyAcknowledgedAt ||
             driverData?.cancellationPolicyAcknowledgedAt || null
           ),
           // Liabilities
-          liabilities: (
-            driverRecord.acknowledgedLiabilities === true ||
-            driverRecord?.progress_liabilities?.confirmed === true ||
-            driverData?.acknowledgedLiabilities === true
-          ) || false,
+          liabilities: !!(
+            driverRecord.acknowledgedLiabilities ||
+            driverRecord?.progress_liabilities?.confirmed ||
+            driverData?.acknowledgedLiabilities ||
+            driverData?.progress_liabilities?.confirmed
+          ),
           liabilitiesDate: (
             driverRecord.liabilitiesAcknowledgedAt ||
             driverRecord?.progress_liabilities?.confirmedAt ||
-            driverData?.liabilitiesAcknowledgedAt || null
+            driverData?.liabilitiesAcknowledgedAt ||
+            driverData?.progress_liabilities?.confirmedAt ||
+            null
           ),
         },
 
         // Health & Safety
         healthAndSafety: {
           smokingStatus: driverRecord.smokingStatus || driverData?.smokingStatus || null,
-          hasPhysicalDifficulties: driverRecord.hasPhysicalDifficulties || driverData?.hasPhysicalDifficulties || false,
+          hasPhysicalDifficulties: (driverRecord.hasPhysicalDifficulties !== undefined ? driverRecord.hasPhysicalDifficulties : (driverData?.hasPhysicalDifficulties !== undefined ? driverData.hasPhysicalDifficulties : null)),
+          smokingFitnessCompleted: driverRecord.progress_smoking_fitness_check?.confirmed === true || driverData?.progress_smoking_fitness_check?.confirmed === true,
         },
 
         // Onboarding Status
@@ -422,7 +433,6 @@ export const adminServices = {
       const driverDoc = await getDoc(driverRef);
       
       if (!driverDoc.exists()) {
-        console.error(`❌ Driver not found: ${email}`);
         return { success: false, message: 'Driver not found' };
       }
       
@@ -442,13 +452,14 @@ export const adminServices = {
         progress_availability: null,
         progress_verification: null,
         progress_blocks_classification: null,
-        progress_how_route_works: null,
+        progress_routes_policy: null,
         progress_fee_structure: null,
         progress_liabilities: null,
         progress_cancellation_policy: null,
-        progress_smoking_fitness: null,
+        progress_smoking_fitness_check: null,
         progress_about: null,
         progress_acknowledgements: null,
+        progress_facility_locations: null,
         // Clear acknowledgement flags
         acknowledgedFeeStructure: null,
         feeStructureAcknowledged: null,
@@ -458,6 +469,27 @@ export const adminServices = {
         acknowledgedCancellationPolicy: null,
         cancellationPolicyAcknowledged: null,
         cancellationPolicyAcknowledgedAt: null,
+        blocksClassificationAcknowledged: null,
+        blocksClassificationAcknowledgedAt: null,
+        routesPolicyAcknowledged: null,
+        routesPolicyAcknowledgedAt: null,
+        roleAcknowledged: null,
+        roleAcknowledgedAt: null,
+        aboutAcknowledged: null,
+        aboutAcknowledgedAt: null,
+        introductionAcknowledged: null,
+        introductionAcknowledgedAt: null,
+        facilityLocationsAcknowledged: null,
+        facilityLocationsAcknowledgedAt: null,
+        // Clear health and safety
+        smokingStatus: null,
+        hasPhysicalDifficulties: null,
+        // Clear details confirmation
+        detailsConfirmed: null,
+        detailsConfirmedAt: null,
+        // Clear last route tracking
+        lastRoute: null,
+        lastRouteUpdatedAt: null,
         // Update timestamp
         updatedAt: serverTimestamp(),
         resetAt: serverTimestamp(),
@@ -577,9 +609,11 @@ export const adminServices = {
   // Add authorized email
   async addAuthorizedEmail(email, emailData = {}) {
     try {
-      const emailRef = doc(db, COLLECTIONS.AUTHORIZED_EMAILS, email.toLowerCase());
+      const normalizedEmail = email.toLowerCase().trim();
+      const emailRef = doc(db, COLLECTIONS.AUTHORIZED_EMAILS, normalizedEmail);
       await setDoc(emailRef, {
-        email: email.toLowerCase(),
+        email: normalizedEmail,
+        createdAt: emailData.createdAt || serverTimestamp(),
         addedAt: serverTimestamp(),
         ...emailData
       });
@@ -593,7 +627,8 @@ export const adminServices = {
   // Remove authorized email
   async removeAuthorizedEmail(email) {
     try {
-      const emailRef = doc(db, COLLECTIONS.AUTHORIZED_EMAILS, email.toLowerCase());
+      const normalizedEmail = email.toLowerCase().trim();
+      const emailRef = doc(db, COLLECTIONS.AUTHORIZED_EMAILS, normalizedEmail);
       await deleteDoc(emailRef);
       return true;
     } catch (error) {
@@ -732,6 +767,187 @@ export const adminServices = {
       return result.data;
     } catch (error) {
       console.error('Error cleaning up placeholders:', error);
+      throw error;
+    }
+  },
+
+  // Admin Management Services
+  // Get all admins
+  async getAllAdmins() {
+    try {
+      const adminsRef = collection(db, COLLECTIONS.ADMINS);
+      const querySnapshot = await getDocs(adminsRef);
+      const admins = [];
+
+      querySnapshot.forEach((doc) => {
+        admins.push({
+          id: doc.id,
+          email: doc.id,
+          ...doc.data()
+        });
+      });
+
+      // Sort by role (super_admin first, then app_admin, then admin_fleet, then admin_view)
+      const roleOrder = { 'super_admin': 0, 'app_admin': 1, 'admin_fleet': 2, 'admin_view': 3 };
+      return admins.sort((a, b) => {
+        const orderA = roleOrder[a.role] ?? 999;
+        const orderB = roleOrder[b.role] ?? 999;
+        return orderA - orderB;
+      });
+    } catch (error) {
+      return [];
+    }
+  },
+
+  // Get admin by email
+  async getAdminByEmail(email) {
+    try {
+      const normalizedEmail = email.toLowerCase().trim();
+      const adminRef = doc(db, COLLECTIONS.ADMINS, normalizedEmail);
+      const adminDoc = await getDoc(adminRef);
+      
+      if (adminDoc.exists()) {
+        return {
+          id: adminDoc.id,
+          email: adminDoc.id,
+          ...adminDoc.data()
+        };
+      }
+      return null;
+    } catch (error) {
+      return null;
+    }
+  },
+
+  // Create or update admin
+  async setAdmin(email, adminData) {
+    try {
+      const normalizedEmail = email.toLowerCase().trim();
+      
+      // Validate role
+      const validRoles = ['super_admin', 'app_admin', 'admin_fleet', 'admin_view'];
+      if (!validRoles.includes(adminData.role)) {
+        throw new Error('Invalid role. Must be one of: super_admin, app_admin, admin_fleet, admin_view');
+      }
+
+      // If setting super_admin, check if another super_admin exists
+      if (adminData.role === 'super_admin') {
+        const existingAdmins = await this.getAllAdmins();
+        const existingSuperAdmin = existingAdmins.find(
+          admin => admin.role === 'super_admin' && admin.email !== normalizedEmail
+        );
+        
+        if (existingSuperAdmin) {
+          throw new Error('A super admin already exists. Only one super admin is allowed.');
+        }
+      }
+
+      const adminRef = doc(db, COLLECTIONS.ADMINS, normalizedEmail);
+      await setDoc(adminRef, {
+        email: normalizedEmail,
+        name: adminData.name || '',
+        role: adminData.role,
+        createdAt: adminData.createdAt || serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+      
+      return true;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Delete admin
+  async deleteAdmin(email) {
+    try {
+      const normalizedEmail = email.toLowerCase().trim();
+      
+      // Check if this is the last super_admin
+      const admin = await this.getAdminByEmail(normalizedEmail);
+      if (admin && admin.role === 'super_admin') {
+        const allAdmins = await this.getAllAdmins();
+        const superAdminCount = allAdmins.filter(a => a.role === 'super_admin').length;
+        if (superAdminCount === 1) {
+          throw new Error('Cannot delete the last super admin. Please create another super admin first.');
+        }
+      }
+      
+      const adminRef = doc(db, COLLECTIONS.ADMINS, normalizedEmail);
+      await deleteDoc(adminRef);
+      return true;
+    } catch (error) {
+      console.error('Error deleting admin:', error);
+      throw error;
+    }
+  },
+
+  // Check if user has permission for a specific action
+  async checkAdminPermission(email, requiredPermission) {
+    try {
+      const admin = await this.getAdminByEmail(email);
+      if (!admin) return false;
+
+      const role = admin.role;
+      
+      // Permission mapping
+      const permissions = {
+        'super_admin': ['view', 'edit', 'create', 'delete', 'manage_admins', 'edit_fee_structure', 'edit_facilities'],
+        'app_admin': ['view', 'view_admins', 'create_lower_admins', 'edit_fee_structure', 'edit_facilities'],
+        'admin_fleet': ['view', 'edit_fee_structure', 'edit_facilities'],
+        'admin_view': ['view']
+      };
+
+      const rolePermissions = permissions[role] || [];
+      return rolePermissions.includes(requiredPermission);
+    } catch (error) {
+      console.error('Error checking admin permission:', error);
+      return false;
+    }
+  },
+
+  // Initialize first super admin (one-time setup)
+  // Can use Cloud Function or direct Firestore write
+  async initializeSuperAdmin(email, name = '', useCloudFunction = false) {
+    try {
+      const normalizedEmail = email.toLowerCase().trim();
+      
+      // Option 1: Use Cloud Function (recommended for production)
+      if (useCloudFunction) {
+        try {
+          const initializeSuperAdminFn = httpsCallable(functions, 'initializeSuperAdmin');
+          const result = await initializeSuperAdminFn({ email: normalizedEmail, name });
+          return result.data;
+        } catch (cloudError) {
+          // Cloud function failed, falling back to direct write
+          // Fall through to direct write
+        }
+      }
+      
+      // Option 2: Direct Firestore write (for development or if Cloud Function fails)
+      // Check if any admins exist
+      const existingAdmins = await this.getAllAdmins();
+      
+      if (existingAdmins.length > 0) {
+        // Check if super_admin already exists
+        const superAdminExists = existingAdmins.some(admin => admin.role === 'super_admin');
+        if (superAdminExists) {
+          throw new Error('A super admin already exists. Cannot initialize another one.');
+        }
+      }
+      
+      // Create the first super admin
+      const success = await this.setAdmin(normalizedEmail, {
+        name: name || normalizedEmail.split('@')[0],
+        role: 'super_admin'
+      });
+      
+      if (success) {
+        return { success: true, message: `Super admin ${normalizedEmail} created successfully` };
+      } else {
+        throw new Error('Failed to create super admin');
+      }
+    } catch (error) {
+      console.error('Error initializing super admin:', error);
       throw error;
     }
   }

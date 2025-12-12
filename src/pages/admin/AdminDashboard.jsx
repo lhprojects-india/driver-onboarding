@@ -3,6 +3,7 @@ import { useAdminAuth } from "../../context/AdminAuthContext";
 import { adminServices } from "../../lib/admin-services";
 import FeeStructureManager from "../../components/admin/FeeStructureManager";
 import FacilityManager from "../../components/admin/FacilityManager";
+import AdminManager from "../../components/admin/AdminManager";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
@@ -34,7 +35,7 @@ import { getCurrentStage } from "../../lib/progress-tracking";
 import LaundryheapLogo from "../../assets/logo";
 
 export default function AdminDashboard() {
-  const { currentUser, isAuthorized, signOut } = useAdminAuth();
+  const { currentUser, isAuthorized, signOut, adminRole } = useAdminAuth();
   const { toast } = useToast();
   const [applications, setApplications] = useState([]);
   const [stats, setStats] = useState({});
@@ -47,10 +48,18 @@ export default function AdminDashboard() {
   const [onboardingFilter, setOnboardingFilter] = useState("all");
 
   useEffect(() => {
+    // Add admin-page class to body to enable text selection
+    document.body.classList.add('admin-page');
+    
     // Only load data if user is authenticated and authorized
     if (currentUser && isAuthorized) {
       loadData();
     }
+
+    // Cleanup: remove class when component unmounts
+    return () => {
+      document.body.classList.remove('admin-page');
+    };
   }, [currentUser, isAuthorized]);
 
   const loadData = async () => {
@@ -71,7 +80,6 @@ export default function AdminDashboard() {
       setApplications(applicationsData);
       setStats(statsData);
     } catch (error) {
-      console.error('Error loading data:', error);
       toast({
         title: "Error loading data",
         description: "Unable to load admin data. Please try again.",
@@ -101,7 +109,6 @@ export default function AdminDashboard() {
         });
       }
     } catch (error) {
-      console.error('Error updating status:', error);
       toast({
         title: "Update failed",
         description: error.message || "Unable to update application status.",
@@ -127,7 +134,6 @@ export default function AdminDashboard() {
         });
       }
     } catch (error) {
-      console.error('Error resetting progress:', error);
       toast({
         title: "Reset failed",
         description: "Unable to reset driver progress.",
@@ -153,7 +159,6 @@ export default function AdminDashboard() {
         });
       }
     } catch (error) {
-      console.error('Error deleting application:', error);
       toast({
         title: "Delete failed",
         description: "Unable to delete application.",
@@ -323,6 +328,9 @@ export default function AdminDashboard() {
             <TabsTrigger value="applications">Applications</TabsTrigger>
             <TabsTrigger value="fee-structures">Fee Structures</TabsTrigger>
             <TabsTrigger value="facilities">Facilities</TabsTrigger>
+            {(adminRole === 'super_admin' || adminRole === 'app_admin') && (
+              <TabsTrigger value="admins">Admins</TabsTrigger>
+            )}
           </TabsList>
 
           {/* Applications Tab */}
@@ -330,39 +338,70 @@ export default function AdminDashboard() {
             {/* Search and Filters */}
             <div className="bg-white border border-gray-200 rounded-md shadow-sm p-4">
               <div className="space-y-4">
-                {/* Filter Row */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Search Row */}
+                <div className="grid grid-cols-1 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">From</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <Search className="h-4 w-4 inline mr-1" />
+                      Search by Email, Name, or City
+                    </label>
                     <Input
-                      type="date"
+                      type="text"
+                      placeholder="Search applications..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                     />
                   </div>
+                </div>
+
+                {/* Filter Row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">To</label>
-                    <Input
-                      type="date"
-                      className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <Filter className="h-4 w-4 inline mr-1" />
+                      Status
+                    </label>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="All statuses" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Statuses</SelectItem>
+                        <SelectItem value="pending">Pending Review</SelectItem>
+                        <SelectItem value="approved">Approved</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <Filter className="h-4 w-4 inline mr-1" />
+                      Onboarding Progress
+                    </label>
+                    <Select value={onboardingFilter} onValueChange={setOnboardingFilter}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="All progress" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Progress</SelectItem>
+                        <SelectItem value="started">In Progress</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="flex items-end gap-2">
                     <Button 
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
-                      onClick={() => loadData()}
-                    >
-                      Filter
-                    </Button>
-                    <Button 
-                      variant="destructive"
-                      className="bg-red-600 hover:bg-red-700 text-white"
+                      variant="outline"
+                      className="border-gray-300 hover:bg-gray-50"
                       onClick={() => {
                         setSearchQuery("");
                         setStatusFilter("all");
                         setOnboardingFilter("all");
                       }}
                     >
-                      Reset
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Reset Filters
                     </Button>
                   </div>
                 </div>
@@ -373,9 +412,17 @@ export default function AdminDashboard() {
             <div className="bg-white border border-gray-200 rounded-md shadow-sm">
               {/* Summary Bar */}
               <div className="bg-gray-100 border-b border-gray-200 px-4 py-2">
-                <p className="text-sm text-gray-700">
-                  Filtered applications: <span className="font-semibold">{filteredApplications.length}</span> | Total applications: <span className="font-semibold">{applications.length}</span>
-                </p>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <p className="text-sm text-gray-700">
+                    Filtered applications: <span className="font-semibold">{filteredApplications.length}</span> | Total applications: <span className="font-semibold">{applications.length}</span>
+                  </p>
+                  {filteredApplications.filter(app => app.onboardingStatus === 'completed' && (!app.status || app.status === 'pending')).length > 0 && (
+                    <Badge className="bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-100">
+                      <Clock className="h-3 w-3 mr-1" />
+                      {filteredApplications.filter(app => app.onboardingStatus === 'completed' && (!app.status || app.status === 'pending')).length} completed application{filteredApplications.filter(app => app.onboardingStatus === 'completed' && (!app.status || app.status === 'pending')).length !== 1 ? 's' : ''} awaiting review
+                    </Badge>
+                  )}
+                </div>
               </div>
 
               <div className="overflow-x-auto">
@@ -429,7 +476,8 @@ export default function AdminDashboard() {
                             <div className="flex items-center justify-end gap-2 flex-wrap">
                               <Button
                                 size="sm"
-                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                                variant="outline"
+                                className="border-blue-600 text-blue-600 hover:bg-blue-50"
                                 onClick={() => {
                                   setSelectedApplication(null);
                                   // If report exists, show it; otherwise create a view from available data
@@ -466,7 +514,8 @@ export default function AdminDashboard() {
                                       },
                                       healthAndSafety: {
                                         smokingStatus: app.smokingStatus || null,
-                                        hasPhysicalDifficulties: app.hasPhysicalDifficulties || false,
+                                        hasPhysicalDifficulties: app.hasPhysicalDifficulties !== undefined ? app.hasPhysicalDifficulties : null,
+                                        smokingFitnessCompleted: app.progress_smoking_fitness_check?.confirmed === true,
                                       },
                                       onboardingStatus: app.onboardingStatus,
                                       createdAt: app.createdAt,
@@ -478,18 +527,89 @@ export default function AdminDashboard() {
                                 <Eye className="h-3 w-3 mr-1" />
                                 View
                               </Button>
-                              <Button
-                                size="sm"
-                                className="bg-blue-600 hover:bg-blue-700 text-white"
-                                onClick={() => {
-                                  setSelectedReport(null);
-                                  setSelectedApplication(app);
-                                }}
-                              >
-                                <Edit className="h-3 w-3 mr-1" />
-                                Edit
-                              </Button>
-                              {app.onboardingStatus === 'completed' && (
+                              
+                              {/* Quick Approve/Reject for completed applications */}
+                              {app.onboardingStatus === 'completed' && (adminRole === 'super_admin' || adminRole === 'app_admin') && app.status !== 'approved' && app.status !== 'rejected' && (
+                                <>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button 
+                                        size="sm"
+                                        className="bg-green-600 hover:bg-green-700 text-white"
+                                      >
+                                        <CheckCircle className="h-3 w-3 mr-1" />
+                                        Approve
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent className="z-[200]">
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Approve Application</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Are you sure you want to approve this application for {app.email}?
+                                          The driver will be notified of the approval.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() => handleStatusUpdate(app.email, 'approved')}
+                                          className="bg-green-600 hover:bg-green-700"
+                                        >
+                                          Approve Application
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                  
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button 
+                                        size="sm"
+                                        variant="outline"
+                                        className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                                      >
+                                        <XCircle className="h-3 w-3 mr-1" />
+                                        Reject
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent className="z-[200]">
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Reject Application</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Are you sure you want to reject this application for {app.email}?
+                                          The driver will be notified of the rejection.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() => handleStatusUpdate(app.email, 'rejected')}
+                                          className="bg-red-600 hover:bg-red-700"
+                                        >
+                                          Reject Application
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </>
+                              )}
+
+                              {/* Edit button for detailed status update */}
+                              {(adminRole === 'super_admin' || adminRole === 'app_admin') && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedReport(null);
+                                    setSelectedApplication(app);
+                                  }}
+                                >
+                                  <Edit className="h-3 w-3 mr-1" />
+                                  Edit
+                                </Button>
+                              )}
+                              
+                              {app.onboardingStatus === 'completed' && (adminRole === 'super_admin' || adminRole === 'app_admin') && (
                                 <AlertDialog>
                                   <AlertDialogTrigger asChild>
                                     <Button 
@@ -497,6 +617,7 @@ export default function AdminDashboard() {
                                       size="sm"
                                       className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 border-orange-200"
                                     >
+                                      <RefreshCw className="h-3 w-3 mr-1" />
                                       Reset
                                     </Button>
                                   </AlertDialogTrigger>
@@ -521,36 +642,39 @@ export default function AdminDashboard() {
                                   </AlertDialogContent>
                                 </AlertDialog>
                               )}
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button 
-                                    variant="destructive" 
-                                    size="sm"
-                                    className="bg-red-600 hover:bg-red-700"
-                                  >
-                                    <Trash2 className="h-3 w-3 mr-1" />
-                                    Delete
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent className="z-[200]">
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Delete Application</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Are you sure you want to delete this application? This action cannot be undone.
-                                      All related data including availability, verification details, and reports will be permanently removed.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => handleDeleteApplication(app.email)}
+                              
+                              {adminRole === 'super_admin' && (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button 
+                                      variant="destructive" 
+                                      size="sm"
                                       className="bg-red-600 hover:bg-red-700"
                                     >
+                                      <Trash2 className="h-3 w-3 mr-1" />
                                       Delete
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent className="z-[200]">
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete Application</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to delete this application? This action cannot be undone.
+                                        All related data including availability, verification details, and reports will be permanently removed.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleDeleteApplication(app.email)}
+                                        className="bg-red-600 hover:bg-red-700"
+                                      >
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -571,6 +695,12 @@ export default function AdminDashboard() {
             <FacilityManager />
           </TabsContent>
 
+          {/* Admins Tab - Only visible to super_admin and app_admin */}
+          {(adminRole === 'super_admin' || adminRole === 'app_admin') && (
+            <TabsContent value="admins">
+              <AdminManager />
+            </TabsContent>
+          )}
           
         </Tabs>
       </div>
@@ -625,6 +755,7 @@ export default function AdminDashboard() {
                       onValueChange={(value) => {
                         setSelectedApplication({...selectedApplication, status: value});
                       }}
+                      disabled={adminRole === 'admin_view'}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select status" />
@@ -635,6 +766,9 @@ export default function AdminDashboard() {
                         <SelectItem value="rejected">Rejected</SelectItem>
                       </SelectContent>
                     </Select>
+                    {adminRole === 'admin_view' && (
+                      <p className="text-xs text-gray-500 mt-1">View-only mode: You cannot edit application status</p>
+                    )}
                   </div>
                 </div>
                 <div>
@@ -645,6 +779,7 @@ export default function AdminDashboard() {
                     onChange={(e) => setAdminNotes(e.target.value)}
                     rows={4}
                     className="resize-none"
+                    disabled={adminRole === 'admin_view'}
                   />
                 </div>
               </div>
@@ -660,12 +795,14 @@ export default function AdminDashboard() {
               >
                 Cancel
               </Button>
-              <Button
-                className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
-                onClick={() => handleStatusUpdate(selectedApplication.email, selectedApplication.status || 'pending')}
-              >
-                Update Status
-              </Button>
+              {(adminRole === 'super_admin' || adminRole === 'app_admin') && (
+                <Button
+                  className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
+                  onClick={() => handleStatusUpdate(selectedApplication.email, selectedApplication.status || 'pending')}
+                >
+                  Update Status
+                </Button>
+              )}
             </div>
           </DialogContent>
         </Dialog>
@@ -842,7 +979,7 @@ export default function AdminDashboard() {
               )}
 
               {/* Health & Safety Information */}
-              {selectedReport.healthAndSafety && (
+              {selectedReport.healthAndSafety && (selectedReport.healthAndSafety.smokingStatus || selectedReport.healthAndSafety.smokingFitnessCompleted || selectedReport.healthAndSafety.hasPhysicalDifficulties !== null) && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg">Health & Safety</CardTitle>
@@ -866,29 +1003,31 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                       )}
-                      <div className="p-3 rounded-lg border bg-gray-50">
-                        <div className="flex items-center gap-3">
-                          <div className={`flex-shrink-0 w-8 h-8 rounded-full ${
-                            !selectedReport.healthAndSafety.hasPhysicalDifficulties 
-                              ? 'bg-green-100' 
-                              : 'bg-orange-100'
-                          } flex items-center justify-center`}>
-                            {!selectedReport.healthAndSafety.hasPhysicalDifficulties ? (
-                              <CheckCircle className="h-5 w-5 text-green-600" />
-                            ) : (
-                              <XCircle className="h-5 w-5 text-orange-600" />
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <span className="font-medium">Physical Fitness</span>
-                            <p className="text-sm text-gray-600 mt-0.5">
-                              {!selectedReport.healthAndSafety.hasPhysicalDifficulties 
-                                ? "Can climb stairs and has no physical difficulties" 
-                                : "Has physical difficulties"}
-                            </p>
+                      {selectedReport.healthAndSafety.hasPhysicalDifficulties !== null && selectedReport.healthAndSafety.hasPhysicalDifficulties !== undefined && (
+                        <div className="p-3 rounded-lg border bg-gray-50">
+                          <div className="flex items-center gap-3">
+                            <div className={`flex-shrink-0 w-8 h-8 rounded-full ${
+                              !selectedReport.healthAndSafety.hasPhysicalDifficulties 
+                                ? 'bg-green-100' 
+                                : 'bg-orange-100'
+                            } flex items-center justify-center`}>
+                              {!selectedReport.healthAndSafety.hasPhysicalDifficulties ? (
+                                <CheckCircle className="h-5 w-5 text-green-600" />
+                              ) : (
+                                <XCircle className="h-5 w-5 text-orange-600" />
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <span className="font-medium">Physical Fitness</span>
+                              <p className="text-sm text-gray-600 mt-0.5">
+                                {!selectedReport.healthAndSafety.hasPhysicalDifficulties 
+                                  ? "Can climb stairs and has no physical difficulties" 
+                                  : "Has physical difficulties"}
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

@@ -441,8 +441,15 @@ export const driverServices = {
       const userRef = doc(db, COLLECTIONS.DRIVERS, email);
       const progressKey = `progress_${step}`;
 
+      // Ensure progress object has confirmed flag and timestamp
+      const progressData = {
+        ...data,
+        confirmed: true,
+        confirmedAt: new Date().toISOString(),
+      };
+
       await updateDoc(userRef, {
-        [progressKey]: data,
+        [progressKey]: progressData,
         updatedAt: serverTimestamp(),
       });
       return true;

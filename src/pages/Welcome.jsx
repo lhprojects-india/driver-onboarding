@@ -27,10 +27,10 @@ const Welcome = () => {
       // Check if user has any actual progress (not just mock data fields)
       // If they have no progress flags, they should stay on welcome page
       const hasActualProgress = 
-        currentUser.progress_confirm_details?.confirmed ||
-        currentUser.progress_verify ||
-        currentUser.phoneVerified ||
-        currentUser.detailsConfirmed ||
+        currentUser.progress_confirm_details?.confirmed === true ||
+        currentUser.progress_verify?.confirmed === true ||
+        currentUser.phoneVerified === true ||
+        currentUser.detailsConfirmed === true ||
         currentUser.lastRoute;
       
       // If no actual progress, don't redirect - let them start from welcome

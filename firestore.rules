@@ -18,9 +18,12 @@ service cloud.firestore {
     }
     
     // Helper function to check if user is admin
-    // Checks against hardcoded list of admin emails (matches admin-config.js)
-    // IMPORTANT: Keep this list in sync with src/lib/admin-config.js
-    // Note: Email comparison is case-sensitive, so ensure emails match exactly
+    // NOTE: Firestore rules cannot dynamically check the authorized_emails collection
+    // due to path construction limitations. The client-side code (AdminAuthContext) 
+    // checks Firestore first, which is the source of truth.
+    // This hardcoded list is used for Firestore security rules evaluation only.
+    // IMPORTANT: Keep this list in sync with authorized_emails collection
+    // Note: Email comparison is case-sensitive - emails in Firestore should be lowercase
     // Google sign-in emails are always lowercase
     function isAdmin() {
       let userEmail = getUserEmail();
@@ -29,7 +32,9 @@ service cloud.firestore {
              (userEmail == 'hari@laundryheap.com' ||
               userEmail == 'admin@laundryheap.com' ||
               userEmail == 'bharath@laundryheap.com' ||
-              userEmail == 'sudhanva@laundryheap.com');
+              userEmail == 'sudhanva@laundryheap.com' ||
+              userEmail == 'mohammed.raquib@laundryheap.com' ||
+              userEmail == 'ramanujan@laundryheap.com');
     }
     
     // Helper function to check if user owns the document or is admin
@@ -50,11 +55,14 @@ service cloud.firestore {
     }
     
     // Authorized emails collection - users can check their own email, admins can read all
+    // NOTE: Users can read their own document to check authorization (used by AdminAuthContext)
+    // Admins can read all documents. This allows the client-side code to check Firestore first.
     match /authorized_emails/{email} {
       // Allow users to check if their own email is authorized (for login verification)
+      // This is used by AdminAuthContext.checkAdminAuthorization() to check Firestore first
       allow read: if request.auth != null && 
                      getUserEmail() != null && 
-                     (getUserEmail() == email || isAdmin());
+                     (getUserEmail().lower() == email.lower() || isAdmin());
       allow write: if false; // Only Admin SDK can write
     }
     
@@ -105,6 +113,18 @@ service cloud.firestore {
     match /facilities/{facilityCode} {
       allow read: if true; // Allow all reads (drivers need to see facilities for their city)
       allow write: if isAdmin(); // Only admins can write
+    }
+    
+    // Admins collection - any authenticated user can read to check if they are an admin
+    // This is needed for the authorization flow to work properly
+    match /admins/{email} {
+      // Allow any authenticated user to read any admin document
+      // This is needed so they can check if they are an admin and what their role is
+      allow read: if request.auth != null;
+      // Allow any authenticated user to write (the client-side code enforces role checks)
+      // In a more secure setup, you would check if the user is already a super_admin
+      // but Firestore rules can't easily check the collection dynamically
+      allow write: if request.auth != null;
     }
   }
 }

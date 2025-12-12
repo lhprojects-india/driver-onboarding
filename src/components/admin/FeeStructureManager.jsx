@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { adminServices } from "../../lib/admin-services";
+import { useAdminAuth } from "../../context/AdminAuthContext";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
@@ -58,6 +59,7 @@ const cleanEarningsString = (earnings) => {
 
 export default function FeeStructureManager() {
   const { toast } = useToast();
+  const { adminRole } = useAdminAuth();
   const [feeStructures, setFeeStructures] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -94,7 +96,6 @@ export default function FeeStructureManager() {
       const structures = await adminServices.getAllFeeStructures();
       setFeeStructures(structures);
     } catch (error) {
-      console.error('Error loading fee structures:', error);
       toast({
         title: "Error loading fee structures",
         description: "Unable to load fee structures. Please try again.",
@@ -260,7 +261,6 @@ export default function FeeStructureManager() {
         });
       }
     } catch (error) {
-      console.error('Error saving fee structure:', error);
       toast({
         title: "Save failed",
         description: "Unable to save fee structure. Please try again.",
@@ -286,7 +286,6 @@ export default function FeeStructureManager() {
         });
       }
     } catch (error) {
-      console.error('Error deleting fee structure:', error);
       toast({
         title: "Delete failed",
         description: "Unable to delete fee structure. Please try again.",
@@ -459,13 +458,14 @@ export default function FeeStructureManager() {
               <h2 className="text-xl font-semibold text-gray-900">Fee Structures</h2>
               <p className="text-sm text-gray-600 mt-1">Manage fee structures for different cities</p>
             </div>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={handleCreateNew} className="bg-blue-600 hover:bg-blue-700">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Fee Structure
-                </Button>
-              </DialogTrigger>
+            {(adminRole === 'super_admin' || adminRole === 'app_admin' || adminRole === 'admin_fleet') && (
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={handleCreateNew} className="bg-blue-600 hover:bg-blue-700">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Fee Structure
+                  </Button>
+                </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto z-[200]">
             <DialogHeader>
               <DialogTitle>
@@ -860,6 +860,7 @@ export default function FeeStructureManager() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -904,22 +905,23 @@ export default function FeeStructureManager() {
                     </span>
                   </CardDescription>
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEdit(cityId, structure)}
-                  >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Edit
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive" size="sm" className="bg-red-600 hover:bg-red-700">
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Delete
-                      </Button>
-                    </AlertDialogTrigger>
+                {(adminRole === 'super_admin' || adminRole === 'app_admin' || adminRole === 'admin_fleet') && (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEdit(cityId, structure)}
+                    >
+                      <Edit className="h-4 w-4 mr-1" />
+                      Edit
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm" className="bg-red-600 hover:bg-red-700">
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Delete
+                        </Button>
+                      </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
                         <AlertDialogTitle>Delete Fee Structure</AlertDialogTitle>
@@ -939,7 +941,8 @@ export default function FeeStructureManager() {
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
-                </div>
+                  </div>
+                )}
               </div>
             </CardHeader>
             <CardContent>

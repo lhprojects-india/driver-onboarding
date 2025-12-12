@@ -59,97 +59,101 @@ export function getNextRoute(userData) {
     return '/';
   }
 
-  // Check acknowledgements summary
-  if (userData.introCompleted && userData.progress_liabilities) {
-    // Check if all acknowledgements are done
-    const hasLiabilities = userData.progress_liabilities?.confirmed || 
-                          userData.acknowledgedLiabilities || 
-                          userData.liabilitiesAcknowledged;
-    const hasBlocksClassification = userData.blocksClassificationAcknowledged;
-    const hasFeeStructure = userData.feeStructureAcknowledged || 
-                           userData.acknowledgedFeeStructure;
-    const hasRoutesPolicy = userData.routesPolicyAcknowledged;
-    const hasCancellationPolicy = userData.cancellationPolicyAcknowledged || 
-                                  userData.acknowledgedCancellationPolicy;
+  // Check acknowledgements summary - only after liabilities is confirmed
+  if (userData.progress_liabilities?.confirmed === true) {
+    // Check if all acknowledgements are done (all must be explicitly true)
+    const hasLiabilities = userData.progress_liabilities?.confirmed === true || 
+                          userData.acknowledgedLiabilities === true;
+    const hasBlocksClassification = userData.blocksClassificationAcknowledged === true;
+    const hasFeeStructure = userData.feeStructureAcknowledged === true || 
+                           userData.acknowledgedFeeStructure === true;
+    const hasRoutesPolicy = userData.routesPolicyAcknowledged === true;
+    const hasCancellationPolicy = userData.cancellationPolicyAcknowledged === true || 
+                                  userData.acknowledgedCancellationPolicy === true;
+    const hasSmokingFitness = userData.progress_smoking_fitness_check?.confirmed === true;
     
     if (hasLiabilities && hasBlocksClassification && hasFeeStructure && 
-        hasRoutesPolicy && hasCancellationPolicy) {
+        hasRoutesPolicy && hasCancellationPolicy && hasSmokingFitness) {
       return '/acknowledgements-summary';
     }
   }
 
   // Check liabilities (after smoking fitness check)
-  if (userData.progress_smoking_fitness_check || 
-      (userData.smokingStatus && userData.hasPhysicalDifficulties !== undefined)) {
+  // Only check explicit progress flag with confirmed: true
+  if (userData.progress_smoking_fitness_check?.confirmed === true) {
     return '/liabilities';
   }
 
   // Check smoking fitness check (after cancellation policy)
-  if (userData.progress_cancellation_policy || 
-      userData.cancellationPolicyAcknowledged || 
-      userData.acknowledgedCancellationPolicy) {
+  if (userData.progress_cancellation_policy?.confirmed === true ||
+      userData.cancellationPolicyAcknowledged === true || 
+      userData.acknowledgedCancellationPolicy === true) {
     return '/smoking-fitness-check';
   }
 
   // Check cancellation policy (after routes policy)
-  if (userData.progress_routes_policy || userData.routesPolicyAcknowledged) {
+  if (userData.progress_routes_policy?.confirmed === true || 
+      userData.routesPolicyAcknowledged === true) {
     return '/cancellation-policy';
   }
 
   // Check routes policy (after fee structure)
-  if (userData.progress_fee_structure || 
-      userData.feeStructureAcknowledged || 
-      userData.acknowledgedFeeStructure) {
+  if (userData.progress_fee_structure?.confirmed === true || 
+      userData.feeStructureAcknowledged === true || 
+      userData.acknowledgedFeeStructure === true) {
     return '/how-route-works';
   }
 
   // Check fee structure (after blocks classification)
-  if (userData.progress_blocks_classification || 
-      userData.blocksClassificationAcknowledged) {
+  if (userData.progress_blocks_classification?.confirmed === true || 
+      userData.blocksClassificationAcknowledged === true) {
     return '/fee-structure';
   }
 
   // Check blocks classification (after facility locations)
-  if (userData.progress_facility_locations || 
-      userData.facilityLocationsAcknowledged || 
-      userData.selectedFacilities) {
+  if (userData.progress_facility_locations?.confirmed === true || 
+      userData.facilityLocationsAcknowledged === true) {
     return '/blocks-classification';
   }
 
   // Check facility locations (after availability)
-  if (userData.progress_availability || userData.availability) {
+  // Check for actual availability data being saved with confirmed flag
+  if (userData.progress_availability?.confirmed === true) {
     return '/facility-locations';
   }
 
   // Check availability (after role)
-  if (userData.progress_role || userData.roleAcknowledged) {
+  if (userData.progress_role?.confirmed === true || 
+      userData.roleAcknowledged === true) {
     return '/availability';
   }
 
   // Check role (after about)
-  if (userData.progress_about || userData.aboutAcknowledged) {
+  if (userData.progress_about?.confirmed === true || 
+      userData.aboutAcknowledged === true) {
     return '/role';
   }
 
   // Check about (after introduction)
-  if (userData.progress_introduction || userData.introductionAcknowledged) {
+  if (userData.progress_introduction?.confirmed === true || 
+      userData.introductionAcknowledged === true) {
     return '/about';
   }
 
   // Check introduction (after confirm details)
   // Only check for actual progress flag, not just presence of fields
   // (Fields might exist from Fountain but user hasn't confirmed yet)
-  if (userData.progress_confirm_details?.confirmed || userData.detailsConfirmed) {
+  if (userData.progress_confirm_details?.confirmed === true || userData.detailsConfirmed === true) {
     return '/introduction';
   }
 
   // Check confirm details (after verify)
-  if (userData.progress_verify || userData.phoneVerified) {
+  if (userData.progress_verify?.confirmed === true || userData.phoneVerified === true) {
     return '/confirm-details';
   }
 
   // If user has email but hasn't verified phone yet
-  if (userData.email && !userData.phoneVerified && !userData.progress_verify) {
+  if (userData.email && userData.phoneVerified !== true && userData.progress_verify?.confirmed !== true) {
     return '/verify';
   }
 

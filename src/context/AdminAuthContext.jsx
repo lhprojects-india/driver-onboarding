@@ -4,7 +4,7 @@ import { useToast } from "../hooks/use-toast";
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut as firebaseSignOut } from "firebase/auth";
 import { doc, getDoc, collection, getDocs } from "firebase/firestore";
 import { auth, db } from "../lib/firebase";
-import { isAuthorizedAdmin } from "../lib/admin-config";
+import { adminServices } from "../lib/admin-services";
 
 const AdminAuthContext = createContext(undefined);
 
@@ -13,6 +13,7 @@ export function AdminAuthProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [adminRole, setAdminRole] = useState(null);
   const { toast } = useToast();
   const location = useLocation();
   
@@ -97,19 +98,31 @@ export function AdminAuthProvider({ children }) {
         const authorized = await checkAdminAuthorization(userEmail);
         
         if (authorized) {
+          // Fetch admin role from admins collection
+          let role = null;
+          try {
+            const admin = await adminServices.getAdminByEmail(userEmail);
+            role = admin?.role || null;
+          } catch (error) {
+            // Error fetching admin role
+          }
+          
           setIsAuthenticated(true);
           setIsAuthorized(true);
+          setAdminRole(role);
           setCurrentUser({
             email: userEmail,
             uid: firebaseUser.uid,
             displayName: firebaseUser.displayName,
             photoURL: firebaseUser.photoURL,
+            role: role
           });
         } else {
           // User is authenticated but not authorized for admin
           // Only sign out if they're trying to access admin routes
           setIsAuthenticated(false);
           setIsAuthorized(false);
+          setAdminRole(null);
           setCurrentUser(null);
           await firebaseSignOut(auth);
           toast({
@@ -122,6 +135,7 @@ export function AdminAuthProvider({ children }) {
         // User is not authenticated
         setIsAuthenticated(false);
         setIsAuthorized(false);
+        setAdminRole(null);
         setCurrentUser(null);
       }
       setIsLoading(false);
@@ -133,32 +147,26 @@ export function AdminAuthProvider({ children }) {
     };
   }, [toast, isAdminRoute, location.pathname]);
 
-  // Check if email is authorized (check Firestore first, fallback to local config)
+  // Check if email is authorized - ONLY check admins collection (single source of truth)
   const checkAdminAuthorization = async (email) => {
     if (!email) return false;
     
     try {
       const normalizedEmail = email.toLowerCase().trim();
       
-      // First, check Firestore authorized_emails collection
+      // Check admins collection ONLY - this is the single source of truth
       try {
-        const authorizedEmailRef = doc(db, 'authorized_emails', normalizedEmail);
-        const authorizedEmailDoc = await getDoc(authorizedEmailRef);
-        
-        if (authorizedEmailDoc.exists()) {
-          // Email found in Firestore - authorized
+        const admin = await adminServices.getAdminByEmail(normalizedEmail);
+        if (admin && admin.role) {
+          // Admin found in admins collection with a role - authorized
           return true;
+        } else {
+          return false;
         }
-      } catch (firestoreError) {
-        // If Firestore check fails (e.g., permission denied), fall back to local config
-        console.warn('Could not check Firestore authorized_emails, falling back to local config:', firestoreError);
+      } catch (adminError) {
+        return false;
       }
-      
-      // Fallback to local configuration for backwards compatibility
-      const authorized = isAuthorizedAdmin(email);
-      return authorized;
     } catch (error) {
-      console.error('Error checking admin authorization:', error);
       return false;
     }
   };
@@ -193,13 +201,22 @@ export function AdminAuthProvider({ children }) {
         return false;
       }
 
+      // Fetch admin role
+      let role = null;
+      try {
+        const admin = await adminServices.getAdminByEmail(result.user.email);
+        role = admin?.role || null;
+        setAdminRole(role);
+      } catch (error) {
+        // Error fetching admin role
+      }
+
       toast({
         title: "Welcome to Admin Panel",
         description: "You have successfully signed in.",
       });
       return true;
     } catch (error) {
-      console.error('Error signing in:', error);
       toast({
         title: "Sign in failed",
         description: "Unable to sign in. Please try again.",
@@ -224,7 +241,6 @@ export function AdminAuthProvider({ children }) {
       });
       return true;
     } catch (error) {
-      console.error('Error signing out:', error);
       toast({
         title: "Sign out failed",
         description: "Unable to sign out. Please try again.",
@@ -239,6 +255,7 @@ export function AdminAuthProvider({ children }) {
     isAuthenticated,
     isAuthorized,
     isLoading,
+    adminRole,
     signInWithGoogle,
     signOut,
   };

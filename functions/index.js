@@ -25,6 +25,9 @@ const generateOnboardingReport = require("./reports/onboarding-report");
 const listCollections = require("./utils/list-collections-function");
 const initializeCollections = require("./utils/initialize-collections-function");
 
+// Admin
+const initializeSuperAdmin = require("./admin/initialize-super-admin");
+
 // Export all functions
 exports.fountainWebhook = fountainWebhook.fountainWebhook;
 exports.verifyApplicantPhone = verifyApplicantPhone.verifyApplicantPhone;
@@ -38,3 +41,4 @@ exports.getFountainApplicant = getFountainApplicant.getFountainApplicant;
 exports.listCollections = listCollections.listCollections;
 exports.initializeCollections = initializeCollections.initializeCollections;
 exports.cleanupPlaceholders = initializeCollections.cleanupPlaceholders;
+exports.initializeSuperAdmin = initializeSuperAdmin.initializeSuperAdmin;

@@ -161,7 +161,6 @@ const FeeStructure = () => {
         navigate("/how-route-works");
       }
     } catch (error) {
-      console.error("Error saving fee structure:", error);
       toast({
         title: "Save Failed",
         description: "Unable to save acknowledgement. Please try again.",
@@ -196,7 +195,6 @@ const FeeStructure = () => {
         });
       }
     } catch (error) {
-      console.error("Error withdrawing application:", error);
       toast({
         title: "Withdrawal Failed",
         description: "Unable to process withdrawal. Please try again.",

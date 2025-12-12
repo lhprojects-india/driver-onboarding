@@ -60,7 +60,6 @@ const SmokingFitnessCheck = () => {
         });
       }
     } catch (error) {
-      console.error("Error withdrawing application:", error);
       toast({
         title: "Withdrawal Failed",
         description: "Unable to process withdrawal. Please try again.",
@@ -108,7 +107,6 @@ const SmokingFitnessCheck = () => {
         navigate("/liabilities");
       }
     } catch (error) {
-      console.error("Error saving smoking/fitness data:", error);
       toast({
         title: "Save Failed",
         description: "Unable to save information. Please try again.",

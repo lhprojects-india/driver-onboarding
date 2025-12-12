@@ -3,8 +3,8 @@ import { useToast } from "../hooks/use-toast";
 import { authServices, driverServices } from "../lib/firebase-services";
 import { adminServices } from "../lib/admin-services";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "../lib/firebase";
-import { isAuthorizedAdmin } from "../lib/admin-config";
+import { auth, db } from "../lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
 import { getAuthToken, clearAuthToken } from "../lib/cookie-utils";
 
 const AuthContext = createContext(undefined);
@@ -14,6 +14,30 @@ export function AuthProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+
+  // Check if email is authorized admin (check admins collection in Firestore)
+  const checkAdminAuthorization = async (email) => {
+    if (!email) return false;
+    
+    try {
+      const normalizedEmail = email.toLowerCase().trim();
+      
+      // Check admins collection (single source of truth)
+      try {
+        const admin = await adminServices.getAdminByEmail(normalizedEmail);
+        if (admin && admin.role) {
+          return true;
+        }
+      } catch (firestoreError) {
+        // Could not check admins collection
+      }
+      
+      return false;
+    } catch (error) {
+      // Error checking admin authorization
+      return false;
+    }
+  };
 
   // Listen for authentication state changes
   useEffect(() => {
@@ -90,7 +114,9 @@ export function AuthProvider({ children }) {
 
         // Check if user is an admin - if so, don't process driver authentication
         // Admins should be handled by AdminAuthContext
-        if (isAuthorizedAdmin(userEmail)) {
+        // Check Firestore first (source of truth), then fallback to local config
+        const isAdmin = await checkAdminAuthorization(userEmail);
+        if (isAdmin) {
           setIsLoading(false);
           return;
         }
@@ -101,7 +127,8 @@ export function AuthProvider({ children }) {
         // If onboarding is completed, sign out the user automatically
         // They should start fresh if they want to go through onboarding again
         // BUT: Don't sign out if user is an admin (already checked above, but double-check)
-        if (userData?.onboardingStatus === 'completed' && !isAuthorizedAdmin(userEmail)) {
+        const isAdminCheck = await checkAdminAuthorization(userEmail);
+        if (userData?.onboardingStatus === 'completed' && !isAdminCheck) {
           await authServices.signOut();
           setIsAuthenticated(false);
           setCurrentUser(null);
@@ -175,7 +202,7 @@ export function AuthProvider({ children }) {
                 // onAuthStateChanged will handle setting the user data
                 return;
               } catch (reAuthError) {
-                console.warn('⚠️ Re-authentication failed, clearing stored token:', reAuthError.message);
+                // Re-authentication failed, clearing stored token
                 clearAuthToken();
                 // Continue to restore user data without Firebase auth
               }
@@ -190,7 +217,7 @@ export function AuthProvider({ children }) {
             // This handles cases where Firebase Auth loses the session but we have valid data
             setIsAuthenticated(true);
           } catch (e) {
-            console.error('Failed to restore session from localStorage', e);
+            // Failed to restore session from localStorage
           }
         }
       }
@@ -239,7 +266,6 @@ export function AuthProvider({ children }) {
         return { success: false };
       }
     } catch (error) {
-      console.error("Email check failed", error);
       toast({
         title: "Verification failed",
         description: "Unable to verify email. Please try again.",
@@ -272,7 +298,7 @@ export function AuthProvider({ children }) {
             fountainData: fountainDataToUse
           });
         } catch (e) {
-          console.error('Failed to parse stored fountainData', e);
+          // Failed to parse stored fountainData
         }
       }
     }
@@ -317,7 +343,7 @@ export function AuthProvider({ children }) {
         // Prepare data to save to Firestore
         const dataToSave = {
           phoneVerified: true,
-          progress_verify: { verified: true, verifiedAt: new Date().toISOString() }
+          progress_verify: { confirmed: true, confirmedAt: new Date().toISOString() }
         };
         
         // Store Fountain applicant data in currentUser for later use
@@ -327,7 +353,7 @@ export function AuthProvider({ children }) {
             email: emailToUse, // Ensure email is set
             fountainData: result.applicant,
             phoneVerified: true,
-            progress_verify: { verified: true, verifiedAt: new Date().toISOString() }
+            progress_verify: { confirmed: true, confirmedAt: new Date().toISOString() }
           }));
           
           // Save Fountain data to Firestore so it persists across auth state changes
@@ -351,7 +377,7 @@ export function AuthProvider({ children }) {
             ...prev,
             email: emailToUse, // Ensure email is set
             phoneVerified: true,
-            progress_verify: { verified: true, verifiedAt: new Date().toISOString() }
+            progress_verify: { confirmed: true, confirmedAt: new Date().toISOString() }
           }));
         }
         
@@ -375,7 +401,6 @@ export function AuthProvider({ children }) {
         return false;
       }
     } catch (error) {
-      console.error("Phone verification failed", error);
       toast({
         title: "Verification failed",
         description: "Unable to verify mobile number. Please try again.",
@@ -411,7 +436,6 @@ export function AuthProvider({ children }) {
         return true;
       }
     } catch (error) {
-      console.error("Error updating user data:", error);
 
       // Extract validation error messages
       let errorMessage = "Unable to save your information. Please try again.";
@@ -457,7 +481,6 @@ export function AuthProvider({ children }) {
         return true;
       }
     } catch (error) {
-      console.error("Error saving availability:", error);
 
       // Extract validation error messages
       let errorMessage = "Unable to save availability. Please try again.";
@@ -495,7 +518,6 @@ export function AuthProvider({ children }) {
         return true;
       }
     } catch (error) {
-      console.error("Error saving verification data:", error);
 
       // Extract validation error messages
       let errorMessage = "Unable to save verification data. Please try again.";
@@ -564,7 +586,6 @@ export function AuthProvider({ children }) {
         return false;
       }
     } catch (error) {
-      console.error("Error completing onboarding:", error);
       toast({
         title: "Completion failed",
         description: "Unable to complete onboarding. Please try again.",
@@ -596,7 +617,6 @@ export function AuthProvider({ children }) {
         return false;
       }
     } catch (error) {
-      console.error("Error signing out:", error);
       toast({
         title: "Sign out failed",
         description: "Unable to sign out. Please try again.",

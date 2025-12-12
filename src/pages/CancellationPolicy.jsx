@@ -54,10 +54,10 @@ const CancellationPolicy = () => {
         if (structures?.currency) {
           setCurrency(structures.currency);
         } else {
-          console.warn(`⚠️ No currency found for ${city}, using default (£)`);
+          // No currency found, using default
         }
       } catch (error) {
-        console.error('❌ Error fetching fee structure for currency:', error);
+        // Error fetching fee structure for currency
       }
     };
 
@@ -112,7 +112,6 @@ const CancellationPolicy = () => {
         }
       }
     } catch (error) {
-      console.error("Error saving cancellation policy acknowledgment:", error);
       toast({
         title: "Save Failed",
         description: "Unable to save acknowledgment. Please try again.",
@@ -143,7 +142,6 @@ const CancellationPolicy = () => {
         });
       }
     } catch (error) {
-      console.error("Error withdrawing application:", error);
       toast({
         title: "Withdrawal Failed",
         description: "Unable to process withdrawal. Please try again.",

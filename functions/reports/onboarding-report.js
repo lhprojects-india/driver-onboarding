@@ -67,19 +67,67 @@ exports.generateOnboardingReport = functions.https.onCall(async (data, context) 
       availability: availabilityData?.availability || null,
 
       // Acknowledgements
+      // Check multiple field name variations to ensure we catch all acknowledgements
       acknowledgements: {
-        liabilities: driverData.acknowledgedLiabilities || false,
-        liabilitiesDate: driverData.liabilitiesAcknowledgedAt || null,
-        cancellationPolicy: driverData.acknowledgedCancellationPolicy || false,
-        cancellationPolicyDate: driverData.cancellationPolicyAcknowledgedAt || null,
-        feeStructure: driverData.acknowledgedFeeStructure || false,
-        feeStructureDate: driverData.feeStructureAcknowledgedAt || null,
+        // Role
+        role: (
+          driverData.roleUnderstood === true ||
+          driverData.roleAcknowledged === true ||
+          driverData?.progress_role?.confirmed === true
+        ) || false,
+        roleDate: (
+          driverData.roleUnderstoodAt ||
+          driverData.roleAcknowledgedAt ||
+          driverData?.progress_role?.confirmedAt ||
+          null
+        ),
+        // Block Classification
+        blockClassification: (
+          driverData.blocksClassificationAcknowledged === true
+        ) || false,
+        blockClassificationDate: (
+          driverData.blocksClassificationAcknowledgedAt || null
+        ),
+        // Fee structure
+        feeStructure: (
+          driverData.acknowledgedFeeStructure === true ||
+          driverData.feeStructureAcknowledged === true
+        ) || false,
+        feeStructureDate: (
+          driverData.feeStructureAcknowledgedAt || null
+        ),
+        // Routes Policy
+        routesPolicy: (
+          driverData.routesPolicyAcknowledged === true
+        ) || false,
+        routesPolicyDate: (
+          driverData.routesPolicyAcknowledgedAt || null
+        ),
+        // Cancellation policy
+        cancellationPolicy: (
+          driverData.acknowledgedCancellationPolicy === true ||
+          driverData.cancellationPolicyAcknowledged === true
+        ) || false,
+        cancellationPolicyDate: (
+          driverData.cancellationPolicyAcknowledgedAt || null
+        ),
+        // Liabilities
+        liabilities: (
+          driverData.acknowledgedLiabilities === true ||
+          driverData?.progress_liabilities?.confirmed === true
+        ) || false,
+        liabilitiesDate: (
+          driverData.liabilitiesAcknowledgedAt ||
+          driverData?.progress_liabilities?.confirmedAt ||
+          null
+        ),
       },
 
       // Health & Safety
       healthAndSafety: {
         smokingStatus: driverData.smokingStatus || null,
-        hasPhysicalDifficulties: driverData.hasPhysicalDifficulties || false,
+        hasPhysicalDifficulties: driverData.hasPhysicalDifficulties !== undefined ? driverData.hasPhysicalDifficulties : null,
+        smokingFitnessCompleted: driverData.progress_smoking_fitness_check?.confirmed === true,
       },
 
       // Onboarding Status

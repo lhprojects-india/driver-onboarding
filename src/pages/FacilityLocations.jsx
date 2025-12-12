@@ -59,7 +59,7 @@ const FacilityLocations = () => {
           setSelectedFacilities(currentUser.selectedFacilities);
         }
       } catch (error) {
-        console.error('❌ Error fetching facilities:', error);
+        // Error fetching facilities
         setCityFacilities([]);
       } finally {
         setLoadingFacilities(false);
@@ -102,7 +102,6 @@ const FacilityLocations = () => {
         navigate("/blocks-classification");
       }
     } catch (error) {
-      console.error("Error saving facility locations:", error);
       toast({
         title: "Save Failed",
         description: "Unable to save facility selections. Please try again.",
@@ -133,7 +132,6 @@ const FacilityLocations = () => {
         });
       }
     } catch (error) {
-      console.error("Error withdrawing application:", error);
       toast({
         title: "Withdrawal Failed",
         description: "Unable to process withdrawal. Please try again.",

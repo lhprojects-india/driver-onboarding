@@ -65,7 +65,6 @@ const HowRouteWorks = () => {
         }
       }
     } catch (error) {
-      console.error("Error saving routes policy acknowledgment:", error);
       toast({
         title: "Save Failed",
         description: "Unable to save acknowledgment. Please try again.",
@@ -96,7 +95,6 @@ const HowRouteWorks = () => {
         });
       }
     } catch (error) {
-      console.error("Error withdrawing application:", error);
       toast({
         title: "Withdrawal Failed",
         description: "Unable to process withdrawal. Please try again.",

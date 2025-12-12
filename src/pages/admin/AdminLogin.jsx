@@ -11,6 +11,16 @@ export default function AdminLogin() {
   const [isSigningIn, setIsSigningIn] = useState(false);
   const navigate = useNavigate();
 
+  // Add admin-page class to body to enable text selection
+  useEffect(() => {
+    document.body.classList.add('admin-page');
+    
+    // Cleanup: remove class when component unmounts
+    return () => {
+      document.body.classList.remove('admin-page');
+    };
+  }, []);
+
   // Redirect to admin dashboard if already authenticated and authorized
   useEffect(() => {
     if (isAuthenticated && isAuthorized) {

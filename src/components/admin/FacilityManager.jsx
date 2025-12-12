@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { adminServices } from "../../lib/admin-services";
+import { useAdminAuth } from "../../context/AdminAuthContext";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "../../components/ui/dialog";
@@ -11,6 +12,7 @@ import { Plus, Edit, Trash2, Save, X, FileText } from "lucide-react";
 
 export default function FacilityManager() {
   const { toast } = useToast();
+  const { adminRole } = useAdminAuth();
   const [facilities, setFacilities] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -31,7 +33,6 @@ export default function FacilityManager() {
       const facilitiesData = await adminServices.getAllFacilities();
       setFacilities(facilitiesData);
     } catch (error) {
-      console.error('Error loading facilities:', error);
       toast({
         title: "Error loading facilities",
         description: "Unable to load facilities. Please try again.",
@@ -107,7 +108,6 @@ export default function FacilityManager() {
         });
       }
     } catch (error) {
-      console.error('Error saving facility:', error);
       toast({
         title: "Save failed",
         description: "Unable to save facility. Please try again.",
@@ -133,7 +133,6 @@ export default function FacilityManager() {
         });
       }
     } catch (error) {
-      console.error('Error deleting facility:', error);
       toast({
         title: "Delete failed",
         description: "Unable to delete facility. Please try again.",
@@ -164,14 +163,15 @@ export default function FacilityManager() {
               <h2 className="text-xl font-semibold text-gray-900">Facility Locations</h2>
               <p className="text-sm text-gray-600 mt-1">Manage facility locations for different cities</p>
             </div>
-            <div className="flex gap-2">
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button onClick={handleCreateNew} className="bg-blue-600 hover:bg-blue-700">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Facility
-                  </Button>
-                </DialogTrigger>
+            {(adminRole === 'super_admin' || adminRole === 'app_admin' || adminRole === 'admin_fleet') && (
+              <div className="flex gap-2">
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button onClick={handleCreateNew} className="bg-blue-600 hover:bg-blue-700">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Facility
+                    </Button>
+                  </DialogTrigger>
                 <DialogContent className="max-w-2xl z-[200]">
                   <DialogHeader>
                     <DialogTitle>
@@ -224,7 +224,8 @@ export default function FacilityManager() {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
-            </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -257,22 +258,23 @@ export default function FacilityManager() {
                           </span>
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(facility)}
-                        >
-                          <Edit className="h-4 w-4 mr-1" />
-                          Edit
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="sm" className="bg-red-600 hover:bg-red-700">
-                              <Trash2 className="h-4 w-4 mr-1" />
-                              Delete
-                            </Button>
-                          </AlertDialogTrigger>
+                      {(adminRole === 'super_admin' || adminRole === 'app_admin' || adminRole === 'admin_fleet') && (
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(facility)}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="sm" className="bg-red-600 hover:bg-red-700">
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                Delete
+                              </Button>
+                            </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
                               <AlertDialogTitle>Delete Facility</AlertDialogTitle>
@@ -292,7 +294,8 @@ export default function FacilityManager() {
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
-                      </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

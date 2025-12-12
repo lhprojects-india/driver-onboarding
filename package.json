@@ -8,7 +8,8 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "init-super-admin": "node scripts/initialize-super-admin.cjs"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
