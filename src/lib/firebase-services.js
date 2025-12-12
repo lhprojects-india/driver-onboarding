@@ -93,7 +93,6 @@ export const authServices = {
             token: tokenResult.data.customToken,
           };
         } else {
-          console.error('Failed to create custom token');
           return {
             success: false,
             message: 'Authentication failed. Please try again.',
@@ -258,7 +257,6 @@ export const driverServices = {
         if (verificationData[field] !== undefined && verificationData[field] !== null) {
           const validation = validateField(field, verificationData[field]);
           if (!validation.isValid) {
-            console.warn(`Validation warning for ${field}:`, validation.message);
             // Continue instead of throwing for mock mode compatibility
           }
         }
@@ -267,7 +265,6 @@ export const driverServices = {
       // Validate and sanitize the verification data
       const validation = validateAndSanitize(verificationData);
       if (!validation.isValid) {
-        console.warn('Validation warnings:', validation.errors);
         // Use original data if validation fails (for mock mode compatibility)
       }
 
@@ -292,7 +289,6 @@ export const driverServices = {
     try {
       // Validate email before using it
       if (!email || typeof email !== 'string') {
-        console.error('❌ Invalid email provided to getDriverData:', email);
         return null;
       }
       
@@ -351,17 +347,14 @@ export const driverServices = {
                     updatedAt: serverTimestamp()
                   }, { merge: true });
                 } catch (saveError) {
-                  console.error('⚠️ Could not save enriched fountainData:', saveError.message, saveError.code);
                   // Non-critical - continue with enriched data in memory
                   // The data will still be available for this session
                 }
               }
             } else {
-              console.warn('⚠️ No fountain_applicants document found for:', email);
+              // No fountain_applicants document found
             }
           } catch (error) {
-            console.error('❌ Could not fetch full fountainData from fountain_applicants:', error);
-            console.error('Error details:', error.message, error.code);
             // Continue with existing data
           }
         }
@@ -380,7 +373,6 @@ export const driverServices = {
     try {
       // Validate email before using it
       if (!email || typeof email !== 'string') {
-        console.error('❌ Invalid email provided to getAvailability:', email);
         return null;
       }
       
@@ -402,7 +394,6 @@ export const driverServices = {
     try {
       // Validate email before using it
       if (!email || typeof email !== 'string') {
-        console.error('❌ Invalid email provided to getVerification:', email);
         return null;
       }
       
@@ -560,7 +551,6 @@ export const feeStructureServices = {
   async getFeeStructuresByCity(city, vehicleType = null) {
     try {
       if (!city) {
-        console.error('City is required to fetch fee structures');
         return null;
       }
 
@@ -576,14 +566,12 @@ export const feeStructureServices = {
         // If it's a vehicle-specific fee structure, return the appropriate vehicle type blocks
         if (feeStructure.feeType === 'vehicle-specific') {
           if (!vehicleType) {
-            // If vehicle type not provided, default to car and warn
-            console.warn('⚠️ Vehicle-specific fee structure found but vehicleType not provided, defaulting to car');
+            // If vehicle type not provided, default to car
             vehicleType = 'car';
           }
           
           // Validate that vehicle-specific blocks exist
           if (!feeStructure.blocks || typeof feeStructure.blocks !== 'object') {
-            console.error('❌ Invalid vehicle-specific fee structure: blocks must be an object with van and car arrays');
             return null;
           }
           
@@ -598,7 +586,6 @@ export const feeStructureServices = {
             };
           } else {
             // Fallback to car if vehicle type blocks not found
-            console.warn(`⚠️ Vehicle-specific blocks for ${vehicleType} not found or empty, falling back to car`);
             if (feeStructure.blocks?.car && Array.isArray(feeStructure.blocks.car) && feeStructure.blocks.car.length > 0) {
               return {
                 ...feeStructure,
@@ -608,7 +595,6 @@ export const feeStructureServices = {
                 vehicleType: 'car'
               };
             } else {
-              console.error(`❌ No valid vehicle-specific blocks found for ${city}. Both van and car blocks are required.`);
               return null;
             }
           }
@@ -618,7 +604,6 @@ export const feeStructureServices = {
         return feeStructure;
       }
       
-      console.warn(`No fee structure found for city: ${city}`);
       return null;
     } catch (error) {
       console.error('Error getting fee structures:', error);
@@ -670,7 +655,6 @@ export const facilityServices = {
   async getFacilitiesByCity(city) {
     try {
       if (!city) {
-        console.error('City is required to fetch facilities');
         return [];
       }
 

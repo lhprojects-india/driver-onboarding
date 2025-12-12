@@ -64,9 +64,7 @@ const FeeStructure = () => {
         // Extract vehicle type from MOT data with debug logging
         const vehicleType = getVehicleTypeFromMOT(currentUser?.fountainData, true);
         
-        
         if (!city) {
-          console.warn('⚠️ No city found in user data, using default structure');
           setFeeStructures(defaultFeeStructure);
           setLoadingFeeStructures(false);
           return;
@@ -76,7 +74,6 @@ const FeeStructure = () => {
         
         // If no structure found for the city, use default
         if (!structures) {
-          console.warn(`⚠️ No fee structure found for ${city}, using default`);
           setFeeStructures(defaultFeeStructure);
         } else {
           // Check if vehicle-specific fees require MOT data (check multiple paths like the helper function)
@@ -89,10 +86,6 @@ const FeeStructure = () => {
               currentUser?.fountainData?.data?.vehicle_type ||
               currentUser?.fountainData?.vehicle
             );
-            
-            if (!hasMotData) {
-              console.warn('⚠️ Vehicle-specific fee structure found but MOT/vehicle data is missing. Using determined vehicle type as fallback.');
-            }
           }
           
           setFeeStructures(structures);
@@ -161,6 +154,7 @@ const FeeStructure = () => {
         navigate("/how-route-works");
       }
     } catch (error) {
+      console.error("Error saving fee structure:", error);
       toast({
         title: "Save Failed",
         description: "Unable to save acknowledgement. Please try again.",
@@ -195,6 +189,7 @@ const FeeStructure = () => {
         });
       }
     } catch (error) {
+      console.error("Error withdrawing application:", error);
       toast({
         title: "Withdrawal Failed",
         description: "Unable to process withdrawal. Please try again.",

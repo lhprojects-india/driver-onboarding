@@ -42,7 +42,6 @@ const CancellationPolicy = () => {
         const city = currentUser?.fountainData?.city || currentUser?.city;
         
         if (!city) {
-          console.warn('⚠️ No city found in user data, using default currency (£)');
           return;
         }
 
@@ -53,11 +52,9 @@ const CancellationPolicy = () => {
         
         if (structures?.currency) {
           setCurrency(structures.currency);
-        } else {
-          // No currency found, using default
         }
       } catch (error) {
-        // Error fetching fee structure for currency
+        console.error('❌ Error fetching fee structure for currency:', error);
       }
     };
 
@@ -112,6 +109,7 @@ const CancellationPolicy = () => {
         }
       }
     } catch (error) {
+      console.error("Error saving cancellation policy acknowledgment:", error);
       toast({
         title: "Save Failed",
         description: "Unable to save acknowledgment. Please try again.",
@@ -142,6 +140,7 @@ const CancellationPolicy = () => {
         });
       }
     } catch (error) {
+      console.error("Error withdrawing application:", error);
       toast({
         title: "Withdrawal Failed",
         description: "Unable to process withdrawal. Please try again.",

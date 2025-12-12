@@ -42,7 +42,6 @@ const FacilityLocations = () => {
       const city = currentUser?.fountainData?.city || currentUser?.city;
 
       if (!city) {
-        console.warn('⚠️ No city found in user data');
         setCityFacilities([]);
         setLoadingFacilities(false);
         return;
@@ -59,7 +58,7 @@ const FacilityLocations = () => {
           setSelectedFacilities(currentUser.selectedFacilities);
         }
       } catch (error) {
-        // Error fetching facilities
+        console.error('❌ Error fetching facilities:', error);
         setCityFacilities([]);
       } finally {
         setLoadingFacilities(false);
@@ -102,6 +101,7 @@ const FacilityLocations = () => {
         navigate("/blocks-classification");
       }
     } catch (error) {
+      console.error("Error saving facility locations:", error);
       toast({
         title: "Save Failed",
         description: "Unable to save facility selections. Please try again.",
@@ -132,6 +132,7 @@ const FacilityLocations = () => {
         });
       }
     } catch (error) {
+      console.error("Error withdrawing application:", error);
       toast({
         title: "Withdrawal Failed",
         description: "Unable to process withdrawal. Please try again.",

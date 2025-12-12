@@ -34,7 +34,7 @@ export function AuthProvider({ children }) {
       
       return false;
     } catch (error) {
-      // Error checking admin authorization
+      console.error('Error checking admin authorization:', error);
       return false;
     }
   };
@@ -202,7 +202,6 @@ export function AuthProvider({ children }) {
                 // onAuthStateChanged will handle setting the user data
                 return;
               } catch (reAuthError) {
-                // Re-authentication failed, clearing stored token
                 clearAuthToken();
                 // Continue to restore user data without Firebase auth
               }
@@ -266,6 +265,7 @@ export function AuthProvider({ children }) {
         return { success: false };
       }
     } catch (error) {
+      console.error("Email check failed", error);
       toast({
         title: "Verification failed",
         description: "Unable to verify email. Please try again.",
@@ -401,6 +401,7 @@ export function AuthProvider({ children }) {
         return false;
       }
     } catch (error) {
+      console.error("Phone verification failed", error);
       toast({
         title: "Verification failed",
         description: "Unable to verify mobile number. Please try again.",
@@ -436,6 +437,7 @@ export function AuthProvider({ children }) {
         return true;
       }
     } catch (error) {
+      console.error("Error updating user data:", error);
 
       // Extract validation error messages
       let errorMessage = "Unable to save your information. Please try again.";
@@ -481,6 +483,7 @@ export function AuthProvider({ children }) {
         return true;
       }
     } catch (error) {
+      console.error("Error saving availability:", error);
 
       // Extract validation error messages
       let errorMessage = "Unable to save availability. Please try again.";
@@ -518,6 +521,7 @@ export function AuthProvider({ children }) {
         return true;
       }
     } catch (error) {
+      console.error("Error saving verification data:", error);
 
       // Extract validation error messages
       let errorMessage = "Unable to save verification data. Please try again.";
@@ -586,6 +590,7 @@ export function AuthProvider({ children }) {
         return false;
       }
     } catch (error) {
+      console.error("Error completing onboarding:", error);
       toast({
         title: "Completion failed",
         description: "Unable to complete onboarding. Please try again.",
@@ -617,6 +622,7 @@ export function AuthProvider({ children }) {
         return false;
       }
     } catch (error) {
+      console.error("Error signing out:", error);
       toast({
         title: "Sign out failed",
         description: "Unable to sign out. Please try again.",

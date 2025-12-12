@@ -67,7 +67,6 @@ export const adminServices = {
             driverEmail = driverDoc.id; // Use the actual document ID from drivers
           }
         } catch (error) {
-          console.error(`Error checking drivers for ${normalizedEmail}:`, error);
           // Continue even if driver data check fails
         }
 
@@ -106,6 +105,7 @@ export const adminServices = {
         return dateB - dateA;
       });
     } catch (error) {
+      console.error('Error getting all applications:', error);
       return [];
     }
   },
@@ -158,6 +158,7 @@ export const adminServices = {
       }
       return null;
     } catch (error) {
+      console.error('Error getting availability data:', error);
       return null;
     }
   },
@@ -173,6 +174,7 @@ export const adminServices = {
       }
       return null;
     } catch (error) {
+      console.error('Error getting verification data:', error);
       return null;
     }
   },
@@ -195,6 +197,7 @@ export const adminServices = {
       }
       return null;
     } catch (error) {
+      console.error('Error getting report by email:', error);
       return null;
     }
   },
@@ -210,6 +213,7 @@ export const adminServices = {
       }
       return null;
     } catch (error) {
+      console.error('Error getting report by reportId:', error);
       return null;
     }
   },
@@ -235,6 +239,7 @@ export const adminServices = {
         return dateB - dateA;
       });
     } catch (error) {
+      console.error('Error getting all reports:', error);
       return [];
     }
   },
@@ -248,10 +253,6 @@ export const adminServices = {
       const driverRef = doc(db, COLLECTIONS.DRIVERS, email);
       const driverSnap = await getDoc(driverRef);
       const driverRecord = driverSnap.exists() ? driverSnap.data() : (driverData || {});
-        blocksClassificationAcknowledged: driverRecord.blocksClassificationAcknowledged,
-        roleUnderstood: driverRecord.roleUnderstood,
-        roleAcknowledged: driverRecord.roleAcknowledged,
-      });
 
       // Get additional data
       const [availabilityData, verificationData] = await Promise.all([
@@ -795,6 +796,7 @@ export const adminServices = {
         return orderA - orderB;
       });
     } catch (error) {
+      console.error('Error getting all admins:', error);
       return [];
     }
   },
@@ -815,6 +817,7 @@ export const adminServices = {
       }
       return null;
     } catch (error) {
+      console.error('Error getting admin by email:', error);
       return null;
     }
   },
@@ -853,6 +856,7 @@ export const adminServices = {
       
       return true;
     } catch (error) {
+      console.error('Error setting admin:', error);
       throw error;
     }
   },
@@ -918,7 +922,6 @@ export const adminServices = {
           const result = await initializeSuperAdminFn({ email: normalizedEmail, name });
           return result.data;
         } catch (cloudError) {
-          // Cloud function failed, falling back to direct write
           // Fall through to direct write
         }
       }

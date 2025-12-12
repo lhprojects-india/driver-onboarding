@@ -96,6 +96,7 @@ export default function FeeStructureManager() {
       const structures = await adminServices.getAllFeeStructures();
       setFeeStructures(structures);
     } catch (error) {
+      console.error('Error loading fee structures:', error);
       toast({
         title: "Error loading fee structures",
         description: "Unable to load fee structures. Please try again.",
@@ -261,6 +262,7 @@ export default function FeeStructureManager() {
         });
       }
     } catch (error) {
+      console.error('Error saving fee structure:', error);
       toast({
         title: "Save failed",
         description: "Unable to save fee structure. Please try again.",
@@ -286,6 +288,7 @@ export default function FeeStructureManager() {
         });
       }
     } catch (error) {
+      console.error('Error deleting fee structure:', error);
       toast({
         title: "Delete failed",
         description: "Unable to delete fee structure. Please try again.",

@@ -53,7 +53,6 @@ export function getVehicleTypeFromMOT(fountainData, debug = false) {
 
   // Check if fountainData exists
   if (!fountainData) {
-    if (debug) console.warn('⚠️ No fountainData provided, defaulting to "car"');
     return "car";
   }
 
@@ -109,17 +108,6 @@ export function getVehicleTypeFromMOT(fountainData, debug = false) {
     
     // If mot contains vehicle info but doesn't match specific types, default to car
     return "car";
-  }
-  
-  // No MOT or vehicle data found
-  if (debug) {
-    console.warn('⚠️ MOT/vehicle data not found in any expected location:', {
-      hasData: !!fountainData.data,
-      hasApplicant: !!fountainData.applicant,
-      dataKeys: fountainData.data ? Object.keys(fountainData.data) : [],
-      applicantKeys: fountainData.applicant ? Object.keys(fountainData.applicant) : [],
-      topLevelKeys: Object.keys(fountainData)
-    });
   }
   
   // Default to "car" if MOT data is not available

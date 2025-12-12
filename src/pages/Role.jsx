@@ -45,6 +45,7 @@ const Role = () => {
         navigate("/availability");
       }
     } catch (error) {
+      console.error("Error saving role acknowledgment:", error);
       toast({
         title: "Save Failed",
         description: "Unable to save acknowledgment. Please try again.",

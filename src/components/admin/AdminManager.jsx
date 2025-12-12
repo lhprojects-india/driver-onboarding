@@ -92,7 +92,7 @@ export default function AdminManager() {
       const adminsData = await adminServices.getAllAdmins();
       setAdmins(adminsData);
     } catch (error) {
-      // Error loading admins
+      console.error('Error loading admins:', error);
       toast({
         title: "Error loading admins",
         description: "Unable to load admins. Please try again.",
@@ -109,7 +109,7 @@ export default function AdminManager() {
       const admin = await adminServices.getAdminByEmail(currentUser.email);
       setCurrentUserRole(admin?.role || null);
     } catch (error) {
-      // Error loading current user role
+      console.error('Error loading current user role:', error);
     }
   };
 
@@ -199,6 +199,7 @@ export default function AdminManager() {
       loadAdmins();
       loadCurrentUserRole();
     } catch (error) {
+      console.error('Error saving admin:', error);
       toast({
         title: "Save failed",
         description: error.message || "Unable to save admin. Please try again.",
@@ -217,6 +218,7 @@ export default function AdminManager() {
       loadAdmins();
       loadCurrentUserRole();
     } catch (error) {
+      console.error('Error deleting admin:', error);
       toast({
         title: "Delete failed",
         description: error.message || "Unable to delete admin. Please try again.",

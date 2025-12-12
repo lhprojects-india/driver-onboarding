@@ -67,6 +67,7 @@ const Liabilities = () => {
         }
       }
     } catch (error) {
+      console.error("Error saving liability confirmation:", error);
       toast({
         title: "Save Failed",
         description: "Unable to save confirmation. Please try again.",

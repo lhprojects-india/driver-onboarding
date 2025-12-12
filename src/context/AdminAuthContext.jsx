@@ -104,7 +104,7 @@ export function AdminAuthProvider({ children }) {
             const admin = await adminServices.getAdminByEmail(userEmail);
             role = admin?.role || null;
           } catch (error) {
-            // Error fetching admin role
+            console.error('Error fetching admin role:', error);
           }
           
           setIsAuthenticated(true);
@@ -164,9 +164,11 @@ export function AdminAuthProvider({ children }) {
           return false;
         }
       } catch (adminError) {
+        console.error('Error checking admins collection:', adminError);
         return false;
       }
     } catch (error) {
+      console.error('Error checking admin authorization:', error);
       return false;
     }
   };
@@ -208,7 +210,7 @@ export function AdminAuthProvider({ children }) {
         role = admin?.role || null;
         setAdminRole(role);
       } catch (error) {
-        // Error fetching admin role
+        console.error('Error fetching admin role:', error);
       }
 
       toast({
@@ -217,6 +219,7 @@ export function AdminAuthProvider({ children }) {
       });
       return true;
     } catch (error) {
+      console.error('Error signing in:', error);
       toast({
         title: "Sign in failed",
         description: "Unable to sign in. Please try again.",
@@ -241,6 +244,7 @@ export function AdminAuthProvider({ children }) {
       });
       return true;
     } catch (error) {
+      console.error('Error signing out:', error);
       toast({
         title: "Sign out failed",
         description: "Unable to sign out. Please try again.",

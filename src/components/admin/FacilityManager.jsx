@@ -33,6 +33,7 @@ export default function FacilityManager() {
       const facilitiesData = await adminServices.getAllFacilities();
       setFacilities(facilitiesData);
     } catch (error) {
+      console.error('Error loading facilities:', error);
       toast({
         title: "Error loading facilities",
         description: "Unable to load facilities. Please try again.",
@@ -108,6 +109,7 @@ export default function FacilityManager() {
         });
       }
     } catch (error) {
+      console.error('Error saving facility:', error);
       toast({
         title: "Save failed",
         description: "Unable to save facility. Please try again.",
@@ -133,6 +135,7 @@ export default function FacilityManager() {
         });
       }
     } catch (error) {
+      console.error('Error deleting facility:', error);
       toast({
         title: "Delete failed",
         description: "Unable to delete facility. Please try again.",

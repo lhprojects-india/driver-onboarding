@@ -80,6 +80,7 @@ export default function AdminDashboard() {
       setApplications(applicationsData);
       setStats(statsData);
     } catch (error) {
+      console.error('Error loading data:', error);
       toast({
         title: "Error loading data",
         description: "Unable to load admin data. Please try again.",
@@ -109,6 +110,7 @@ export default function AdminDashboard() {
         });
       }
     } catch (error) {
+      console.error('Error updating status:', error);
       toast({
         title: "Update failed",
         description: error.message || "Unable to update application status.",
@@ -134,6 +136,7 @@ export default function AdminDashboard() {
         });
       }
     } catch (error) {
+      console.error('Error resetting progress:', error);
       toast({
         title: "Reset failed",
         description: "Unable to reset driver progress.",
@@ -159,6 +162,7 @@ export default function AdminDashboard() {
         });
       }
     } catch (error) {
+      console.error('Error deleting application:', error);
       toast({
         title: "Delete failed",
         description: "Unable to delete application.",

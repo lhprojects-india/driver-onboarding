@@ -51,6 +51,7 @@ const BlocksClassification = () => {
         }
       }
     } catch (error) {
+      console.error("Error saving blocks classification acknowledgment:", error);
       toast({
         title: "Save Failed",
         description: "Unable to save acknowledgment. Please try again.",

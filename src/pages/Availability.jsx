@@ -37,6 +37,7 @@ const Availability = () => {
         navigate("/facility-locations");
       }
     } catch (error) {
+      console.error("Error saving availability:", error);
     } finally {
       setIsSaving(false);
     }

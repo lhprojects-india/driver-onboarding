@@ -87,6 +87,7 @@ const AcknowledgementsSummary = () => {
         navigate("/thank-you");
       }
     } catch (error) {
+      console.error("Error completing onboarding:", error);
       toast({
         title: "Completion Failed",
         description: "Unable to complete onboarding. Please try again.",

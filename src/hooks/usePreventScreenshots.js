@@ -170,7 +170,6 @@ export function usePreventScreenshots() {
         if (!devtools.open) {
           devtools.open = true;
           // Optionally show a warning or take action
-          console.warn('Developer tools detected');
           // You could redirect or show a warning here
         }
       } else {
