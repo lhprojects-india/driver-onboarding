@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect } from "react";
 import { useToast } from "../hooks/use-toast";
 import { authServices, driverServices } from "../lib/firebase-services";
 import { adminServices } from "../lib/admin-services";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, signInWithCustomToken } from "firebase/auth";
 import { auth, db } from "../lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { getAuthToken, clearAuthToken } from "../lib/cookie-utils";
@@ -197,7 +197,6 @@ export function AuthProvider({ children }) {
             // Try to re-authenticate with stored token if available
             if (storedToken) {
               try {
-                const { signInWithCustomToken } = await import('firebase/auth');
                 await signInWithCustomToken(auth, storedToken);
                 // onAuthStateChanged will handle setting the user data
                 return;

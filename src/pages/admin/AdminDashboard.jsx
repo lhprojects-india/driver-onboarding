@@ -28,11 +28,14 @@ import {
   RefreshCw,
   Eye,
   Search,
-  Filter
+  Filter,
+  MapPin
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { getCurrentStage } from "../../lib/progress-tracking";
 import LaundryheapLogo from "../../assets/logo";
+import { auth } from "../../lib/firebase";
+import { getVehicleTypeFromMOT } from "../../lib/utils";
 
 export default function AdminDashboard() {
   const { currentUser, isAuthorized, signOut, adminRole } = useAdminAuth();
@@ -46,6 +49,8 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [onboardingFilter, setOnboardingFilter] = useState("all");
+  const [stageFilter, setStageFilter] = useState("all");
+  const [cityFilter, setCityFilter] = useState("all");
 
   useEffect(() => {
     // Add admin-page class to body to enable text selection
@@ -66,7 +71,6 @@ export default function AdminDashboard() {
     setIsLoading(true);
     try {
       // Force token refresh to ensure Firestore rules can read the email
-      const { auth } = await import('../../lib/firebase');
       const currentUser = auth.currentUser;
       if (currentUser) {
         await currentUser.getIdToken(true); // Force refresh
@@ -171,6 +175,19 @@ export default function AdminDashboard() {
     }
   };
 
+  // Extract unique cities and stages from applications
+  const uniqueCities = [...new Set(applications.map(app => app.city).filter(Boolean))].sort();
+  const uniqueStages = [...new Set(applications.map(app => getCurrentStage(app)))].sort();
+
+  // Count active filters
+  const activeFiltersCount = [
+    searchQuery && 1,
+    statusFilter !== "all" && 1,
+    stageFilter !== "all" && 1,
+    cityFilter !== "all" && 1,
+    onboardingFilter !== "all" && 1,
+  ].filter(Boolean).length;
+
   // Filter applications based on search and filters
   const filteredApplications = applications.filter((app) => {
     // Search filter
@@ -188,7 +205,15 @@ export default function AdminDashboard() {
     const matchesOnboarding = onboardingFilter === "all" || 
       app.onboardingStatus === onboardingFilter;
 
-    return matchesSearch && matchesStatus && matchesOnboarding;
+    // Stage filter
+    const matchesStage = stageFilter === "all" || 
+      getCurrentStage(app) === stageFilter;
+
+    // City filter
+    const matchesCity = cityFilter === "all" || 
+      app.city === cityFilter;
+
+    return matchesSearch && matchesStatus && matchesOnboarding && matchesStage && matchesCity;
   });
 
   const getStatusBadge = (status) => {
@@ -258,8 +283,8 @@ export default function AdminDashboard() {
                 </svg>
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">Laundryheap Admin</h1>
-                <p className="text-sm text-gray-500">Driver Onboarding Management</p>
+                <h1 className="text-xl font-semibold text-gray-900">Laundryheap Driver Onboarding</h1>
+                <p className="text-sm text-gray-500">Admin Dashboard</p>
               </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
@@ -340,75 +365,217 @@ export default function AdminDashboard() {
           {/* Applications Tab */}
           <TabsContent value="applications" className="space-y-6 mt-6">
             {/* Search and Filters */}
-            <div className="bg-white border border-gray-200 rounded-md shadow-sm p-4">
-              <div className="space-y-4">
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white rounded-lg shadow-sm">
+                      <Filter className="h-5 w-5 text-gray-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">Filters & Search</h3>
+                      <p className="text-sm text-gray-500">Refine your application search</p>
+                    </div>
+                  </div>
+                  {activeFiltersCount > 0 && (
+                    <Badge variant="default" className="bg-blue-600 text-white">
+                      {activeFiltersCount} active filter{activeFiltersCount !== 1 ? 's' : ''}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-6 space-y-6">
                 {/* Search Row */}
-                <div className="grid grid-cols-1 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      <Search className="h-4 w-4 inline mr-1" />
-                      Search by Email, Name, or City
-                    </label>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <Search className="h-4 w-4 inline mr-2 text-gray-500" />
+                    Search Applications
+                  </label>
+                  <div className="relative">
                     <Input
                       type="text"
-                      placeholder="Search applications..."
+                      placeholder="Search by email, name, or city..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      className="w-full pl-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-11"
                     />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery("")}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
 
+                {/* Divider */}
+                <div className="border-t border-gray-200"></div>
+
                 {/* Filter Row */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      <Filter className="h-4 w-4 inline mr-1" />
-                      Status
-                    </label>
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="All statuses" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Statuses</SelectItem>
-                        <SelectItem value="pending">Pending Review</SelectItem>
-                        <SelectItem value="approved">Approved</SelectItem>
-                        <SelectItem value="rejected">Rejected</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      <Filter className="h-4 w-4 inline mr-1" />
-                      Onboarding Progress
-                    </label>
-                    <Select value={onboardingFilter} onValueChange={setOnboardingFilter}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="All progress" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Progress</SelectItem>
-                        <SelectItem value="started">In Progress</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-end gap-2">
-                    <Button 
-                      variant="outline"
-                      className="border-gray-300 hover:bg-gray-50"
-                      onClick={() => {
-                        setSearchQuery("");
-                        setStatusFilter("all");
-                        setOnboardingFilter("all");
-                      }}
-                    >
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Reset Filters
-                    </Button>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-4">
+                    Filter Options
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="space-y-2">
+                      <label className="block text-xs font-medium text-gray-600 uppercase tracking-wide">
+                        Application Status
+                      </label>
+                      <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger className="w-full h-10 border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                          <SelectValue placeholder="All statuses" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Statuses</SelectItem>
+                          <SelectItem value="pending">Pending Review</SelectItem>
+                          <SelectItem value="approved">Approved</SelectItem>
+                          <SelectItem value="rejected">Rejected</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="block text-xs font-medium text-gray-600 uppercase tracking-wide">
+                        Current Stage
+                      </label>
+                      <Select value={stageFilter} onValueChange={setStageFilter}>
+                        <SelectTrigger className="w-full h-10 border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                          <SelectValue placeholder="All stages" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Stages</SelectItem>
+                          {uniqueStages.map((stage) => (
+                            <SelectItem key={stage} value={stage}>
+                              {stage}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="block text-xs font-medium text-gray-600 uppercase tracking-wide">
+                        City
+                      </label>
+                      <Select value={cityFilter} onValueChange={setCityFilter}>
+                        <SelectTrigger className="w-full h-10 border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                          <SelectValue placeholder="All cities" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Cities</SelectItem>
+                          {uniqueCities.map((city) => (
+                            <SelectItem key={city} value={city}>
+                              {city}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="block text-xs font-medium text-gray-600 uppercase tracking-wide">
+                        Onboarding Progress
+                      </label>
+                      <Select value={onboardingFilter} onValueChange={setOnboardingFilter}>
+                        <SelectTrigger className="w-full h-10 border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                          <SelectValue placeholder="All progress" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Progress</SelectItem>
+                          <SelectItem value="started">In Progress</SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
+
+                {/* Active Filters & Reset */}
+                {activeFiltersCount > 0 && (
+                  <>
+                    <div className="border-t border-gray-200"></div>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="text-sm font-medium text-gray-700">Active filters:</span>
+                      {searchQuery && (
+                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+                          Search: "{searchQuery}"
+                          <button
+                            onClick={() => setSearchQuery("")}
+                            className="ml-2 hover:text-blue-900"
+                          >
+                            <XCircle className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      )}
+                      {statusFilter !== "all" && (
+                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+                          Status: {statusFilter === "pending" ? "Pending Review" : statusFilter}
+                          <button
+                            onClick={() => setStatusFilter("all")}
+                            className="ml-2 hover:text-blue-900"
+                          >
+                            <XCircle className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      )}
+                      {stageFilter !== "all" && (
+                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+                          Stage: {stageFilter}
+                          <button
+                            onClick={() => setStageFilter("all")}
+                            className="ml-2 hover:text-blue-900"
+                          >
+                            <XCircle className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      )}
+                      {cityFilter !== "all" && (
+                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+                          City: {cityFilter}
+                          <button
+                            onClick={() => setCityFilter("all")}
+                            className="ml-2 hover:text-blue-900"
+                          >
+                            <XCircle className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      )}
+                      {onboardingFilter !== "all" && (
+                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+                          Progress: {onboardingFilter === "started" ? "In Progress" : "Completed"}
+                          <button
+                            onClick={() => setOnboardingFilter("all")}
+                            className="ml-2 hover:text-blue-900"
+                          >
+                            <XCircle className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      )}
+                      <div className="ml-auto">
+                        <Button 
+                          variant="outline"
+                          size="sm"
+                          className="border-gray-300 hover:bg-gray-50 hover:border-gray-400"
+                          onClick={() => {
+                            setSearchQuery("");
+                            setStatusFilter("all");
+                            setOnboardingFilter("all");
+                            setStageFilter("all");
+                            setCityFilter("all");
+                          }}
+                        >
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Reset All
+                        </Button>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
@@ -486,8 +653,70 @@ export default function AdminDashboard() {
                                   setSelectedApplication(null);
                                   // If report exists, show it; otherwise create a view from available data
                                   if (app.report) {
-                                    setSelectedReport(app.report);
+                                    // Helper to extract timestamp value (handles Firestore Timestamps)
+                                    const getTimestamp = (...fields) => {
+                                      for (const field of fields) {
+                                        if (field) {
+                                          // If it has toDate method (Firestore Timestamp), convert it
+                                          if (field.toDate && typeof field.toDate === 'function') {
+                                            return field.toDate();
+                                          }
+                                          // If it has seconds (serialized Firestore Timestamp)
+                                          if (field.seconds) {
+                                            return new Date(field.seconds * 1000);
+                                          }
+                                          // Otherwise return as is
+                                          return field;
+                                        }
+                                      }
+                                      return null;
+                                    };
+                                    
+                                    // Use existing report but enhance acknowledgements with timestamps if missing
+                                    const enhancedAcknowledgements = {
+                                      ...app.report.acknowledgements,
+                                      // Add timestamp fields if they don't exist in the report
+                                      roleDate: getTimestamp(
+                                        app.report.acknowledgements?.roleDate,
+                                        app.roleUnderstoodAt,
+                                        app.roleAcknowledgedAt,
+                                        app?.progress_role?.confirmedAt
+                                      ),
+                                      blockClassificationDate: getTimestamp(
+                                        app.report.acknowledgements?.blockClassificationDate,
+                                        app.blocksClassificationAcknowledgedAt
+                                      ),
+                                      feeStructureDate: getTimestamp(
+                                        app.report.acknowledgements?.feeStructureDate,
+                                        app.feeStructureAcknowledgedAt
+                                      ),
+                                      routesPolicyDate: getTimestamp(
+                                        app.report.acknowledgements?.routesPolicyDate,
+                                        app.routesPolicyAcknowledgedAt
+                                      ),
+                                      cancellationPolicyDate: getTimestamp(
+                                        app.report.acknowledgements?.cancellationPolicyDate,
+                                        app.cancellationPolicyAcknowledgedAt
+                                      ),
+                                      liabilitiesDate: getTimestamp(
+                                        app.report.acknowledgements?.liabilitiesDate,
+                                        app.liabilitiesAcknowledgedAt,
+                                        app?.progress_liabilities?.confirmedAt
+                                      ),
+                                    };
+                                    
+                                    const enhancedReport = {
+                                      ...app.report,
+                                      acknowledgements: enhancedAcknowledgements
+                                    };
+                                    
+                                    setSelectedReport(enhancedReport);
                                   } else {
+                                    // Extract vehicle type from fountain data if available
+                                    const vehicleTypeFromFountain = app.fountainData 
+                                      ? getVehicleTypeFromMOT(app.fountainData) 
+                                      : null;
+                                    
                                     // Create a report-like object from available data
                                     setSelectedReport({
                                       driverEmail: app.email,
@@ -503,23 +732,34 @@ export default function AdminDashboard() {
                                         email: app.email,
                                         phone: app.phone,
                                         city: app.city,
-                                        vehicleType: app.vehicleType,
+                                        vehicleType: vehicleTypeFromFountain || app.vehicleType || null,
                                         country: app.country,
                                       },
                                       availability: app.availability?.availability || app.availability,
                                       verification: app.verification,
                                       acknowledgements: {
-                                        role: app.roleUnderstood || false,
+                                        role: app.roleUnderstood || app.roleAcknowledged || app?.progress_role?.confirmed || false,
+                                        roleDate: app.roleUnderstoodAt || app.roleAcknowledgedAt || app?.progress_role?.confirmedAt || app?.progress_role?.confirmedAt?.toDate?.() || null,
                                         blockClassification: app.blocksClassificationAcknowledged || false,
+                                        blockClassificationDate: app.blocksClassificationAcknowledgedAt || app.blocksClassificationAcknowledgedAt?.toDate?.() || null,
                                         feeStructure: app.acknowledgedFeeStructure || app.feeStructureAcknowledged || false,
+                                        feeStructureDate: app.feeStructureAcknowledgedAt || app.feeStructureAcknowledgedAt?.toDate?.() || null,
                                         routesPolicy: app.routesPolicyAcknowledged || false,
+                                        routesPolicyDate: app.routesPolicyAcknowledgedAt || app.routesPolicyAcknowledgedAt?.toDate?.() || null,
                                         cancellationPolicy: app.acknowledgedCancellationPolicy || app.cancellationPolicyAcknowledged || false,
-                                        liabilities: app.acknowledgedLiabilities || false,
+                                        cancellationPolicyDate: app.cancellationPolicyAcknowledgedAt || app.cancellationPolicyAcknowledgedAt?.toDate?.() || null,
+                                        liabilities: app.acknowledgedLiabilities || app?.progress_liabilities?.confirmed || false,
+                                        liabilitiesDate: app.liabilitiesAcknowledgedAt || app?.progress_liabilities?.confirmedAt || app?.progress_liabilities?.confirmedAt?.toDate?.() || null,
                                       },
                                       healthAndSafety: {
                                         smokingStatus: app.smokingStatus || null,
                                         hasPhysicalDifficulties: app.hasPhysicalDifficulties !== undefined ? app.hasPhysicalDifficulties : null,
                                         smokingFitnessCompleted: app.progress_smoking_fitness_check?.confirmed === true,
+                                      },
+                                      facilityPreferences: {
+                                        selectedFacilities: app.selectedFacilities || [],
+                                        acknowledged: app.facilityLocationsAcknowledged || false,
+                                        acknowledgedAt: app.facilityLocationsAcknowledgedAt || null,
                                       },
                                       onboardingStatus: app.onboardingStatus,
                                       createdAt: app.createdAt,
@@ -982,6 +1222,59 @@ export default function AdminDashboard() {
                 </Card>
               )}
 
+              {/* Facility Preferences */}
+              {selectedReport.facilityPreferences && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <MapPin className="h-5 w-5" />
+                      Facility Preferences
+                    </CardTitle>
+                    <CardDescription>Facility locations the driver is comfortable working with</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {selectedReport.facilityPreferences.selectedFacilities && selectedReport.facilityPreferences.selectedFacilities.length > 0 ? (
+                        <div className="space-y-2">
+                          <div className="text-sm font-medium text-gray-700 mb-2">
+                            Selected Facilities ({selectedReport.facilityPreferences.selectedFacilities.length}):
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedReport.facilityPreferences.selectedFacilities.map((facility, index) => (
+                              <Badge key={index} variant="outline" className="text-sm">
+                                {facility}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-500 italic">
+                          No facilities selected
+                        </div>
+                      )}
+                      
+                      <div className="pt-2 border-t flex items-center justify-end gap-2"> Acknowledgement Status:
+                        <Badge variant={selectedReport.facilityPreferences.acknowledged ? "default" : "secondary"} 
+                                className={selectedReport.facilityPreferences.acknowledged ? "bg-green-600" : ""}>
+                          {selectedReport.facilityPreferences.acknowledged ? 'Completed' : 'Pending'}
+                        </Badge>
+                        {selectedReport.facilityPreferences.acknowledgedAt && (
+                          <span className="text-xs text-gray-500">
+                            {new Date(selectedReport.facilityPreferences.acknowledgedAt).toLocaleDateString('en-GB', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Health & Safety Information */}
               {selectedReport.healthAndSafety && (selectedReport.healthAndSafety.smokingStatus || selectedReport.healthAndSafety.smokingFitnessCompleted || selectedReport.healthAndSafety.hasPhysicalDifficulties !== null) && (
                 <Card>
@@ -1046,12 +1339,7 @@ export default function AdminDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {Object.entries(selectedReport.acknowledgements).map(([key, value]) => {
-                        // Skip date fields
-                        if (key.toLowerCase().includes('date') || key.toLowerCase().includes('at')) {
-                          return null;
-                        }
-                        
+                      {(() => {
                         // Friendly labels for each acknowledgement
                         const labels = {
                           role: 'Driver Role',
@@ -1062,33 +1350,102 @@ export default function AdminDashboard() {
                           liabilities: 'Liabilities'
                         };
                         
-                        return (
-                          <div key={key} className="flex items-center justify-between p-3 rounded-lg border bg-gray-50">
-                            <div className="flex items-center gap-3">
-                              {value ? (
-                                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-                                  <CheckCircle className="h-5 w-5 text-green-600" />
+                        // Map of acknowledgement keys to their date field names
+                        const dateFields = {
+                          role: 'roleDate',
+                          blockClassification: 'blockClassificationDate',
+                          feeStructure: 'feeStructureDate',
+                          routesPolicy: 'routesPolicyDate',
+                          cancellationPolicy: 'cancellationPolicyDate',
+                          liabilities: 'liabilitiesDate'
+                        };
+                        
+                        // Filter to only show acknowledgement status fields (not date fields)
+                        const acknowledgementEntries = Object.entries(selectedReport.acknowledgements).filter(([key]) => 
+                          !key.toLowerCase().includes('date') && !key.toLowerCase().includes('at')
+                        );
+                        
+                        return acknowledgementEntries.map(([key, value]) => {
+                          const dateField = dateFields[key];
+                          const timestamp = selectedReport.acknowledgements[dateField];
+                          
+                          return (
+                            <div key={key} className="flex items-center justify-between p-3 rounded-lg border bg-gray-50">
+                              <div className="flex items-center gap-3 flex-1">
+                                {value ? (
+                                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                                    <CheckCircle className="h-5 w-5 text-green-600" />
+                                  </div>
+                                ) : (
+                                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
+                                    <XCircle className="h-5 w-5 text-red-600" />
+                                  </div>
+                                )}
+                                <div className="flex-1">
+                                  <span className="font-medium">
+                                    {labels[key] || key.replace(/([A-Z])/g, ' $1').trim()}
+                                  </span>
+                                  <p className="text-xs text-gray-500 mt-0.5">
+                                    {value ? 'Acknowledged and accepted' : 'Not yet acknowledged'}
+                                  </p>
+                                  {(() => {
+                                    // Handle various timestamp formats
+                                    // Check if timestamp exists and is not null/undefined
+                                    if (timestamp === null || timestamp === undefined || timestamp === '') {
+                                      return null;
+                                    }
+                                    
+                                    let date;
+                                    try {
+                                      // Firestore Timestamp object (has toDate method)
+                                      if (timestamp && typeof timestamp.toDate === 'function') {
+                                        date = timestamp.toDate();
+                                      }
+                                      // Firestore Timestamp with seconds/nanoseconds (serialized format)
+                                      else if (timestamp && typeof timestamp === 'object' && timestamp.seconds) {
+                                        date = new Date(timestamp.seconds * 1000 + (timestamp.nanoseconds || 0) / 1000000);
+                                      }
+                                      // Regular Date object
+                                      else if (timestamp instanceof Date) {
+                                        date = timestamp;
+                                      }
+                                      // Date string or number (timestamp)
+                                      else if (timestamp) {
+                                        date = new Date(timestamp);
+                                      }
+                                      
+                                      // Validate date
+                                      if (!date || isNaN(date.getTime())) {
+                                        return null;
+                                      }
+                                      
+                                      return (
+                                        <p className="text-xs text-gray-400 mt-1">
+                                          {date.toLocaleDateString('en-GB', {
+                                            day: '2-digit',
+                                            month: 'short',
+                                            year: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                          })}
+                                        </p>
+                                      );
+                                    } catch (error) {
+                                      console.error('Error formatting timestamp:', error, timestamp);
+                                      return null;
+                                    }
+                                  })()}
                                 </div>
-                              ) : (
-                                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
-                                  <XCircle className="h-5 w-5 text-red-600" />
-                                </div>
-                              )}
-                              <div>
-                                <span className="font-medium">
-                                  {labels[key] || key.replace(/([A-Z])/g, ' $1').trim()}
-                                </span>
-                                <p className="text-xs text-gray-500 mt-0.5">
-                                  {value ? 'Acknowledged and accepted' : 'Not yet acknowledged'}
-                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge variant={value ? "default" : "secondary"} className={value ? "bg-green-600" : ""}>
+                                  {value ? 'Completed' : 'Pending'}
+                                </Badge>
                               </div>
                             </div>
-                            <Badge variant={value ? "default" : "secondary"} className={value ? "bg-green-600" : ""}>
-                              {value ? 'Completed' : 'Pending'}
-                            </Badge>
-                          </div>
-                        );
-                      })}
+                          );
+                        });
+                      })()}
                     </div>
                   </CardContent>
                 </Card>
@@ -1114,18 +1471,6 @@ export default function AdminDashboard() {
                   </CardContent>
                 </Card>
               )}
-
-              {/* Raw JSON View */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Raw Report Data</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <pre className="bg-gray-100 p-4 rounded-lg overflow-x-auto text-xs">
-                    {JSON.stringify(selectedReport, null, 2)}
-                  </pre>
-                </CardContent>
-              </Card>
             </div>
           )}
         </DialogContent>

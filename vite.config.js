@@ -25,5 +25,20 @@ export default defineConfig(({ mode }) => ({
     minify: 'esbuild',
     cssCodeSplit: true,
     sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Split Firebase into separate chunks
+          'firebase-auth': ['firebase/auth'],
+          'firebase-firestore': ['firebase/firestore'],
+          'firebase-functions': ['firebase/functions'],
+          'firebase-app': ['firebase/app'],
+          // Split vendor libraries
+          'react-vendor': ['react', 'react-dom'],
+          'lucide-react': ['lucide-react'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000, // Increase limit to 1MB to reduce warnings
   },
 }));

@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from './firebase';
+import { getVehicleTypeFromMOT } from './utils';
 
 // Collection names
 const COLLECTIONS = {
@@ -253,6 +254,16 @@ export const adminServices = {
       const driverRef = doc(db, COLLECTIONS.DRIVERS, email);
       const driverSnap = await getDoc(driverRef);
       const driverRecord = driverSnap.exists() ? driverSnap.data() : (driverData || {});
+      
+      // Fetch fountain data to get vehicle type from MOT
+      const fountainRef = doc(db, COLLECTIONS.FOUNTAIN_APPLICANTS, email);
+      const fountainSnap = await getDoc(fountainRef);
+      const fountainData = fountainSnap.exists() ? fountainSnap.data() : null;
+      
+      // Extract vehicle type from fountain data using MOT
+      const vehicleTypeFromFountain = fountainData?.fountainData 
+        ? getVehicleTypeFromMOT(fountainData.fountainData) 
+        : null;
 
       // Get additional data
       const [availabilityData, verificationData] = await Promise.all([
@@ -281,7 +292,7 @@ export const adminServices = {
           email: email,
           phone: driverRecord.phone || driverData?.phone || null,
           city: driverRecord.city || driverData?.city || null,
-          vehicleType: driverRecord.vehicleType || driverData?.vehicleType || null,
+          vehicleType: vehicleTypeFromFountain || driverRecord.vehicleType || driverData?.vehicleType || null,
           country: driverRecord.country || driverData?.country || null,
         },
 
@@ -380,6 +391,13 @@ export const adminServices = {
           smokingStatus: driverRecord.smokingStatus || driverData?.smokingStatus || null,
           hasPhysicalDifficulties: (driverRecord.hasPhysicalDifficulties !== undefined ? driverRecord.hasPhysicalDifficulties : (driverData?.hasPhysicalDifficulties !== undefined ? driverData.hasPhysicalDifficulties : null)),
           smokingFitnessCompleted: driverRecord.progress_smoking_fitness_check?.confirmed === true || driverData?.progress_smoking_fitness_check?.confirmed === true,
+        },
+
+        // Facility Preferences
+        facilityPreferences: {
+          selectedFacilities: driverRecord.selectedFacilities || driverData?.selectedFacilities || [],
+          acknowledged: driverRecord.facilityLocationsAcknowledged || driverData?.facilityLocationsAcknowledged || false,
+          acknowledgedAt: driverRecord.facilityLocationsAcknowledgedAt || driverData?.facilityLocationsAcknowledgedAt || null,
         },
 
         // Onboarding Status
