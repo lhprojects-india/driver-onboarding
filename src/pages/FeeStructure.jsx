@@ -151,7 +151,7 @@ const FeeStructure = () => {
       if (searchParams.get('from') === 'summary') {
         navigate("/acknowledgements-summary");
       } else {
-        navigate("/how-route-works");
+        navigate("/payment-cycle-schedule");
       }
     } catch (error) {
       console.error("Error saving fee structure:", error);

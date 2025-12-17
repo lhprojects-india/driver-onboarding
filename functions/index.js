@@ -17,6 +17,7 @@ const getFountainApplicant = require("./applicants/get-applicant");
 const acknowledgeFeeStructure = require("./acknowledgements/fee-structure");
 const acknowledgeLiabilities = require("./acknowledgements/liabilities");
 const acknowledgeCancellationPolicy = require("./acknowledgements/cancellation-policy");
+const acknowledgePaymentCycleSchedule = require("./acknowledgements/payment-cycle-schedule");
 
 // Reports
 const generateOnboardingReport = require("./reports/onboarding-report");
@@ -37,6 +38,7 @@ exports.generateOnboardingReport = generateOnboardingReport.generateOnboardingRe
 exports.acknowledgeFeeStructure = acknowledgeFeeStructure.acknowledgeFeeStructure;
 exports.acknowledgeLiabilities = acknowledgeLiabilities.acknowledgeLiabilities;
 exports.acknowledgeCancellationPolicy = acknowledgeCancellationPolicy.acknowledgeCancellationPolicy;
+exports.acknowledgePaymentCycleSchedule = acknowledgePaymentCycleSchedule.acknowledgePaymentCycleSchedule;
 exports.getFountainApplicant = getFountainApplicant.getFountainApplicant;
 exports.listCollections = listCollections.listCollections;
 exports.initializeCollections = initializeCollections.initializeCollections;

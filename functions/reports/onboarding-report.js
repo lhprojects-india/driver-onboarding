@@ -178,6 +178,14 @@ exports.generateOnboardingReport = functions.https.onCall(async (data, context) 
         feeStructureDate: (
           driverData.feeStructureAcknowledgedAt || null
         ),
+        // Payment Cycle & Schedule
+        paymentCycleSchedule: (
+          driverData.acknowledgedPaymentCycleSchedule === true ||
+          driverData.paymentCycleScheduleAcknowledged === true
+        ) || false,
+        paymentCycleScheduleDate: (
+          driverData.paymentCycleScheduleAcknowledgedAt || null
+        ),
         // Routes Policy
         routesPolicy: (
           driverData.routesPolicyAcknowledged === true

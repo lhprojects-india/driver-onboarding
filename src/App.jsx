@@ -22,6 +22,7 @@ import BlocksClassification from "./pages/BlocksClassification";
 import HowRouteWorks from "./pages/HowRouteWorks";
 import CancellationPolicy from "./pages/CancellationPolicy";
 import FeeStructure from "./pages/FeeStructure";
+import PaymentCycleSchedule from "./pages/PaymentCycleSchedule";
 import AcknowledgementsSummary from "./pages/AcknowledgementsSummary";
 import ThankYou from "./pages/ThankYou";
 import NotFound from "./pages/NotFound";
@@ -57,6 +58,7 @@ function App() {
                   <Route path="/smoking-fitness-check" element={<SmokingFitnessCheck />} />
                   <Route path="/blocks-classification" element={<BlocksClassification />} />
                   <Route path="/fee-structure" element={<FeeStructure />} />
+                  <Route path="/payment-cycle-schedule" element={<PaymentCycleSchedule />} />
                   <Route path="/how-route-works" element={<HowRouteWorks />} />
                   <Route path="/cancellation-policy" element={<CancellationPolicy />} />
                   <Route path="/acknowledgements-summary" element={<AcknowledgementsSummary />} />

@@ -541,6 +541,16 @@ export const acknowledgementServices = {
       console.error('Error acknowledging cancellation policy:', error);
       return { success: false, message: error.message };
     }
+  },
+  async acknowledgePaymentCycleSchedule() {
+    try {
+      const fn = httpsCallable(functions, 'acknowledgePaymentCycleSchedule');
+      const res = await fn();
+      return { success: true, alreadyAcknowledged: res.data?.alreadyAcknowledged || false };
+    } catch (error) {
+      console.error('Error acknowledging payment cycle & schedule:', error);
+      return { success: false, message: error.message };
+    }
   }
 };
 

@@ -45,6 +45,15 @@ const AcknowledgementsSummary = () => {
       }
     },
     {
+      id: 'payment-cycle-schedule',
+      title: 'Payment Cycle & Block Schedule',
+      route: '/payment-cycle-schedule',
+      isAcknowledged: () => {
+        return currentUser?.paymentCycleScheduleAcknowledged || 
+               currentUser?.acknowledgedPaymentCycleSchedule;
+      }
+    },
+    {
       id: 'how-route-works',
       title: 'Routes and Task Addition',
       route: '/how-route-works',
