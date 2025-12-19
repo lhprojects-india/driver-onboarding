@@ -958,7 +958,7 @@ export const adminServices = {
       // Permission mapping
       const permissions = {
         'super_admin': ['view', 'edit', 'create', 'delete', 'manage_admins', 'edit_fee_structure', 'edit_facilities'],
-        'app_admin': ['view', 'view_admins', 'create_lower_admins', 'edit_fee_structure', 'edit_facilities'],
+        'app_admin': ['view', 'view_admins', 'create_lower_admins', 'delete', 'edit_fee_structure', 'edit_facilities'],
         'admin_fleet': ['view', 'edit_fee_structure', 'edit_facilities'],
         'admin_view': ['view']
       };

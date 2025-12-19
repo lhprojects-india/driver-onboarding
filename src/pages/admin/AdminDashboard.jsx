@@ -892,7 +892,7 @@ export default function AdminDashboard() {
                                 </AlertDialog>
                               )}
                               
-                              {adminRole === 'super_admin' && (
+                              {(adminRole === 'super_admin' || adminRole === 'app_admin') && (
                                 <AlertDialog>
                                   <AlertDialogTrigger asChild>
                                     <Button 
