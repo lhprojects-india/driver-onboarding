@@ -28,7 +28,7 @@ const ROLE_CONFIG = {
   },
   admin_fleet: {
     label: 'Fleet Admin',
-    description: 'Can edit fee structure and add facilities',
+    description: 'Can approve/reject applications, edit fee structure and add facilities',
     icon: Shield,
     color: 'bg-blue-100 text-blue-800 border-blue-200'
   },

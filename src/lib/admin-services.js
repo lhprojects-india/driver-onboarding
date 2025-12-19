@@ -536,12 +536,56 @@ export const adminServices = {
   // Delete application and all related data
   async deleteApplication(email) {
     try {
-      // Delete from all collections
+      const normalizedEmail = email.toLowerCase().trim();
+      const errors = [];
+      
+      // Delete from fountain_applicants (source of truth for applications list)
+      try {
+        const fountainRef = doc(db, COLLECTIONS.FOUNTAIN_APPLICANTS, normalizedEmail);
+        await deleteDoc(fountainRef);
+      } catch (error) {
+        // Document might not exist, which is fine
+        if (error.code !== 'not-found') {
+          errors.push(`fountain_applicants: ${error.message}`);
+        }
+      }
+      
+      // Delete all reports associated with this email
+      try {
+        const reportsRef = collection(db, COLLECTIONS.REPORTS);
+        const reportsQuery = query(reportsRef, where('driverEmail', '==', normalizedEmail));
+        const reportsSnapshot = await getDocs(reportsQuery);
+        
+        const deletePromises = reportsSnapshot.docs.map(reportDoc => deleteDoc(reportDoc.ref));
+        await Promise.all(deletePromises);
+      } catch (error) {
+        errors.push(`reports: ${error.message}`);
+      }
+      
+      // Delete from other collections
       const collections = [COLLECTIONS.DRIVERS, COLLECTIONS.AVAILABILITY, COLLECTIONS.VERIFICATION];
       
       for (const collectionName of collections) {
-        const docRef = doc(db, collectionName, email);
-        await deleteDoc(docRef);
+        try {
+          const docRef = doc(db, collectionName, normalizedEmail);
+          await deleteDoc(docRef);
+        } catch (error) {
+          // Document might not exist, which is fine
+          if (error.code !== 'not-found') {
+            errors.push(`${collectionName}: ${error.message}`);
+          }
+        }
+      }
+      
+      // If there were any errors, log them but still return success if main deletions worked
+      if (errors.length > 0) {
+        console.warn('Some deletions had errors:', errors);
+        // Still return true if fountain_applicants was deleted (main requirement)
+        // Check if fountain_applicants deletion was successful by checking if it's not in errors
+        const fountainError = errors.find(e => e.startsWith('fountain_applicants'));
+        if (fountainError) {
+          return false;
+        }
       }
       
       return true;

@@ -111,6 +111,32 @@ exports.generateOnboardingReport = functions.https.onCall(async (data, context) 
       ? getVehicleTypeFromMOT(fountainData.fountainData) 
       : null;
 
+    // Helper function to order availability days (Monday to Sunday)
+    const orderAvailabilityDays = (availability) => {
+      if (!availability) {
+        return null;
+      }
+
+      const DAYS_ORDER = ['Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays', 'Sundays'];
+      const orderedAvailability = {};
+
+      // Create a new object with days in the correct order
+      for (const day of DAYS_ORDER) {
+        if (availability[day]) {
+          orderedAvailability[day] = availability[day];
+        }
+      }
+
+      // Include any additional days that might not be in the standard order
+      for (const day in availability) {
+        if (!orderedAvailability[day] && availability.hasOwnProperty(day)) {
+          orderedAvailability[day] = availability[day];
+        }
+      }
+
+      return orderedAvailability;
+    };
+
     // Create comprehensive report
     const report = {
       reportId: `REPORT_${Date.now()}_${userEmail.replace(/[@.]/g, "_")}`,
@@ -145,8 +171,8 @@ exports.generateOnboardingReport = functions.https.onCall(async (data, context) 
         verifiedAt: verificationData.updatedAt,
       } : null,
 
-      // Availability
-      availability: availabilityData?.availability || null,
+      // Availability (ordered Monday to Sunday)
+      availability: orderAvailabilityDays(availabilityData?.availability),
 
       // Acknowledgements
       // Check multiple field name variations to ensure we catch all acknowledgements

@@ -29,13 +29,16 @@ import {
   Eye,
   Search,
   Filter,
-  MapPin
+  MapPin,
+  AlertTriangle
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { getCurrentStage } from "../../lib/progress-tracking";
 import LaundryheapLogo from "../../assets/logo";
 import { auth } from "../../lib/firebase";
 import { getVehicleTypeFromMOT } from "../../lib/utils";
+
+const DAYS_ORDER = ['Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays', 'Sundays'];
 
 export default function AdminDashboard() {
   const { currentUser, isAuthorized, signOut, adminRole } = useAdminAuth();
@@ -600,20 +603,21 @@ export default function AdminDashboard() {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-white border-b border-gray-200">
-                      <TableHead className="font-semibold text-gray-700 py-3">Email</TableHead>
-                      <TableHead className="font-semibold text-gray-700 py-3">Name</TableHead>
-                      <TableHead className="font-semibold text-gray-700 py-3">City</TableHead>
-                      <TableHead className="font-semibold text-gray-700 py-3">Status</TableHead>
-                      <TableHead className="font-semibold text-gray-700 py-3">Current Stage</TableHead>
-                      <TableHead className="font-semibold text-gray-700 py-3">Progress</TableHead>
-                      <TableHead className="font-semibold text-gray-700 py-3">Created</TableHead>
-                      <TableHead className="font-semibold text-right text-gray-700 py-3">Actions</TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-3 px-4 text-left">Name</TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-3 px-4 text-left">Email</TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-3 px-4 text-left">Phone</TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-3 px-4 text-left">City</TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-3 px-4 text-left">Status</TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-3 px-4 text-left">Current Stage</TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-3 px-4 text-left">Progress</TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-3 px-4 text-left">Created</TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-3 px-4 text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                     <TableBody>
                       {filteredApplications.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={8} className="text-center py-12 text-gray-500">
+                          <TableCell colSpan={9} className="text-center py-12 text-gray-500 px-4">
                             <div className="flex flex-col items-center gap-2">
                               <FileText className="h-8 w-8 text-gray-400" />
                               <p className="text-sm font-medium">No applications found</p>
@@ -624,17 +628,18 @@ export default function AdminDashboard() {
                       ) : (
                         filteredApplications.map((app) => (
                         <TableRow key={app.id} className="hover:bg-gray-50 border-b border-gray-200 transition-colors">
-                          <TableCell className="font-medium text-sm py-3">{app.email}</TableCell>
-                          <TableCell className="text-sm py-3">{app.name || 'N/A'}</TableCell>
-                          <TableCell className="text-sm py-3">{app.city || 'N/A'}</TableCell>
-                          <TableCell className="py-3">{getStatusBadge(app.status)}</TableCell>
-                          <TableCell className="py-3">
+                          <TableCell className="text-sm py-3 px-4 text-left font-medium">{app.name || 'N/A'}</TableCell>
+                          <TableCell className="text-sm py-3 px-4 text-left">{app.email}</TableCell>
+                          <TableCell className="text-sm py-3 px-4 text-left">{app.phone || 'N/A'}</TableCell>
+                          <TableCell className="text-sm py-3 px-4 text-left">{app.city || 'N/A'}</TableCell>
+                          <TableCell className="py-3 px-4 text-left">{getStatusBadge(app.status)}</TableCell>
+                          <TableCell className="py-3 px-4 text-left">
                             <Badge variant="outline" className="text-xs">
                               {getCurrentStage(app)}
                             </Badge>
                           </TableCell>
-                          <TableCell className="py-3">{getOnboardingStatusBadge(app.onboardingStatus)}</TableCell>
-                          <TableCell className="text-sm text-gray-600 py-3">
+                          <TableCell className="py-3 px-4 text-left">{getOnboardingStatusBadge(app.onboardingStatus)}</TableCell>
+                          <TableCell className="text-sm text-gray-600 py-3 px-4 text-left">
                             {app.createdAt ? new Date(app.createdAt).toLocaleDateString('en-GB', { 
                               day: '2-digit', 
                               month: 'short', 
@@ -643,7 +648,7 @@ export default function AdminDashboard() {
                               minute: '2-digit'
                             }) : 'N/A'}
                           </TableCell>
-                          <TableCell className="py-3">
+                          <TableCell className="py-3 px-4 text-right">
                             <div className="flex items-center justify-end gap-2 flex-wrap">
                               <Button
                                 size="sm"
@@ -773,7 +778,7 @@ export default function AdminDashboard() {
                               </Button>
                               
                               {/* Quick Approve/Reject for completed applications */}
-                              {app.onboardingStatus === 'completed' && (adminRole === 'super_admin' || adminRole === 'app_admin') && app.status !== 'approved' && app.status !== 'rejected' && (
+                              {app.onboardingStatus === 'completed' && (adminRole === 'super_admin' || adminRole === 'app_admin' || adminRole === 'admin_fleet') && app.status !== 'approved' && app.status !== 'rejected' && (
                                 <>
                                   <AlertDialog>
                                     <AlertDialogTrigger asChild>
@@ -839,7 +844,7 @@ export default function AdminDashboard() {
                               )}
 
                               {/* Edit button for detailed status update */}
-                              {(adminRole === 'super_admin' || adminRole === 'app_admin') && (
+                              {(adminRole === 'super_admin' || adminRole === 'app_admin' || adminRole === 'admin_fleet') && (
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -899,21 +904,41 @@ export default function AdminDashboard() {
                                       Delete
                                     </Button>
                                   </AlertDialogTrigger>
-                                  <AlertDialogContent className="z-[200]">
+                                  <AlertDialogContent className="z-[200] border-red-200">
                                     <AlertDialogHeader>
-                                      <AlertDialogTitle>Delete Application</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        Are you sure you want to delete this application? This action cannot be undone.
-                                        All related data including availability, verification details, and reports will be permanently removed.
+                                      <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+                                        <AlertTriangle className="h-5 w-5" />
+                                        Delete Application
+                                      </AlertDialogTitle>
+                                      <AlertDialogDescription className="text-gray-700 pt-2">
+                                        <div className="space-y-2">
+                                          <p className="font-semibold text-red-600">
+                                            This action cannot be undone!
+                                          </p>
+                                          <p>
+                                            Are you sure you want to permanently delete this application for <span className="font-medium">{app.email}</span>?
+                                          </p>
+                                          <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+                                            <p className="text-sm font-medium text-red-900 mb-1">The following data will be permanently removed:</p>
+                                            <ul className="text-sm text-red-800 list-disc list-inside space-y-1">
+                                              <li>Application record from Fountain applicants</li>
+                                              <li>Driver profile and onboarding progress</li>
+                                              <li>Availability schedule</li>
+                                              <li>Verification details</li>
+                                              <li>All associated reports</li>
+                                            </ul>
+                                          </div>
+                                        </div>
                                       </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                       <AlertDialogCancel>Cancel</AlertDialogCancel>
                                       <AlertDialogAction
                                         onClick={() => handleDeleteApplication(app.email)}
-                                        className="bg-red-600 hover:bg-red-700"
+                                        className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
                                       >
-                                        Delete
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Delete Permanently
                                       </AlertDialogAction>
                                     </AlertDialogFooter>
                                   </AlertDialogContent>
@@ -1039,7 +1064,7 @@ export default function AdminDashboard() {
               >
                 Cancel
               </Button>
-              {(adminRole === 'super_admin' || adminRole === 'app_admin') && (
+              {(adminRole === 'super_admin' || adminRole === 'app_admin' || adminRole === 'admin_fleet') && (
                 <Button
                   className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
                   onClick={() => handleStatusUpdate(selectedApplication.email, selectedApplication.status || 'pending')}
@@ -1159,37 +1184,40 @@ export default function AdminDashboard() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {Object.entries(selectedReport.availability).map(([day, slots]) => (
-                            <TableRow key={day} className="hover:bg-gray-50">
-                              <TableCell className="font-medium capitalize">{day}</TableCell>
-                              <TableCell className="text-center">
-                                {slots.noon ? (
-                                  <span className="inline-flex items-center gap-1 text-green-600 font-medium">
-                                    <CheckCircle className="h-4 w-4" />
-                                    Yes
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 text-red-600">
-                                    <XCircle className="h-4 w-4" />
-                                    No
-                                  </span>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-center">
-                                {slots.evening ? (
-                                  <span className="inline-flex items-center gap-1 text-green-600 font-medium">
-                                    <CheckCircle className="h-4 w-4" />
-                                    Yes
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 text-red-600">
-                                    <XCircle className="h-4 w-4" />
-                                    No
-                                  </span>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          ))}
+                          {DAYS_ORDER.filter(day => selectedReport.availability[day]).map((day) => {
+                            const slots = selectedReport.availability[day];
+                            return (
+                              <TableRow key={day} className="hover:bg-gray-50">
+                                <TableCell className="font-medium capitalize">{day}</TableCell>
+                                <TableCell className="text-center">
+                                  {slots.noon ? (
+                                    <span className="inline-flex items-center gap-1 text-green-600 font-medium">
+                                      <CheckCircle className="h-4 w-4" />
+                                      Yes
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 text-red-600">
+                                      <XCircle className="h-4 w-4" />
+                                      No
+                                    </span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  {slots.evening ? (
+                                    <span className="inline-flex items-center gap-1 text-green-600 font-medium">
+                                      <CheckCircle className="h-4 w-4" />
+                                      Yes
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 text-red-600">
+                                      <XCircle className="h-4 w-4" />
+                                      No
+                                    </span>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
                         </TableBody>
                       </Table>
                     </div>
