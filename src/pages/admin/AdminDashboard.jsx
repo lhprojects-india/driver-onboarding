@@ -30,7 +30,8 @@ import {
   Search,
   Filter,
   MapPin,
-  AlertTriangle
+  AlertTriangle,
+  UserCheck
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { getCurrentStage } from "../../lib/progress-tracking";
@@ -52,7 +53,7 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [onboardingFilter, setOnboardingFilter] = useState("all");
-  const [stageFilter, setStageFilter] = useState("all");
+  const [stageFilter, setStageFilter] = useState("Completed");
   const [cityFilter, setCityFilter] = useState("all");
 
   useEffect(() => {
@@ -224,13 +225,14 @@ export default function AdminDashboard() {
       pending: { variant: "secondary", icon: Clock },
       approved: { variant: "default", icon: CheckCircle },
       rejected: { variant: "destructive", icon: XCircle },
+      hired: { variant: "default", icon: UserCheck, className: "bg-green-600 hover:bg-green-700" },
     };
     
     const config = statusConfig[status] || statusConfig.pending;
     const Icon = config.icon;
     
     return (
-      <Badge variant={config.variant} className="flex items-center gap-1">
+      <Badge variant={config.variant} className={`flex items-center gap-1 ${config.className || ''}`}>
         <Icon className="h-3 w-3" />
         {status || 'pending'}
       </Badge>
@@ -266,7 +268,7 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b sticky top-0 z-30">
+      <header className="bg-white shadow-md border-b sticky top-0 z-30">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center gap-4">
@@ -286,8 +288,8 @@ export default function AdminDashboard() {
                 </svg>
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">Laundryheap Driver Onboarding</h1>
-                <p className="text-sm text-gray-500">Admin Dashboard</p>
+                <h1 className="text-xl font-bold text-gray-900">Laundryheap Driver Onboarding</h1>
+                <p className="text-sm text-gray-600 font-medium">Admin Dashboard</p>
               </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
@@ -307,56 +309,65 @@ export default function AdminDashboard() {
 
       <div className="w-full px-4 sm:px-6 py-4">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-          <Card className="border-l-4 border-l-blue-500 shadow-sm hover:shadow-md transition-shadow">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
+          <Card className="border-l-4 border-l-brand-blue shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Total Applications</CardTitle>
+              <CardTitle className="text-sm font-semibold text-gray-700">Total Applications</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-gray-900">{stats.total || 0}</div>
+              <div className="text-3xl font-bold text-brand-blue">{stats.total || 0}</div>
             </CardContent>
           </Card>
           
-          <Card className="border-l-4 border-l-yellow-500 shadow-sm hover:shadow-md transition-shadow">
+          <Card className="border-l-4 border-l-brand-yellow shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Pending Review</CardTitle>
+              <CardTitle className="text-sm font-semibold text-gray-700">Pending Review</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-gray-900">{stats.pending || 0}</div>
+              <div className="text-3xl font-bold text-brand-shadeYellow">{stats.pending || 0}</div>
             </CardContent>
           </Card>
           
-          <Card className="border-l-4 border-l-green-500 shadow-sm hover:shadow-md transition-shadow">
+          <Card className="border-l-4 border-l-brand-teal shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Approved</CardTitle>
+              <CardTitle className="text-sm font-semibold text-gray-700">Approved</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-gray-900">{stats.approved || 0}</div>
+              <div className="text-3xl font-bold text-brand-shadeTeal">{stats.approved || 0}</div>
             </CardContent>
           </Card>
           
-          <Card className="border-l-4 border-l-purple-500 shadow-sm hover:shadow-md transition-shadow">
+          <Card className="border-l-4 border-l-brand-pink shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Completed</CardTitle>
+              <CardTitle className="text-sm font-semibold text-gray-700">Hired</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-gray-900">{stats.completed || 0}</div>
+              <div className="text-3xl font-bold text-brand-shadePink">{stats.hired || 0}</div>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-l-4 border-l-brand-lightTeal shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold text-gray-700">Completed</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-brand-teal">{stats.completed || 0}</div>
             </CardContent>
           </Card>
 
-          <Card className="border-l-4 border-l-red-500 shadow-sm hover:shadow-md transition-shadow">
+          <Card className="border-l-4 border-l-brand-shadePink shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Rejected</CardTitle>
+              <CardTitle className="text-sm font-semibold text-gray-700">Rejected</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-gray-900">{stats.rejected || 0}</div>
+              <div className="text-3xl font-bold text-brand-shadePink">{stats.rejected || 0}</div>
             </CardContent>
           </Card>
         </div>
 
         {/* Main Content */}
         <Tabs defaultValue="applications" className="space-y-6">
-          <TabsList className="bg-white shadow-sm">
+          <TabsList className="bg-white shadow-md border border-gray-200">
             <TabsTrigger value="applications">Applications</TabsTrigger>
             <TabsTrigger value="fee-structures">Fee Structures</TabsTrigger>
             <TabsTrigger value="facilities">Facilities</TabsTrigger>
@@ -368,219 +379,195 @@ export default function AdminDashboard() {
           {/* Applications Tab */}
           <TabsContent value="applications" className="space-y-6 mt-6">
             {/* Search and Filters */}
-            <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+            <Card className="bg-white border border-gray-200 shadow-sm">
               {/* Header */}
-              <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 px-6 py-4">
+              <div className="bg-white border-b border-gray-200 px-6 py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-white rounded-lg shadow-sm">
-                      <Filter className="h-5 w-5 text-gray-600" />
-                    </div>
+                    <Filter className="h-5 w-5 text-gray-600" />
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">Filters & Search</h3>
-                      <p className="text-sm text-gray-500">Refine your application search</p>
+                      <p className="text-sm text-gray-600">Refine your application search</p>
                     </div>
                   </div>
-                  {activeFiltersCount > 0 && (
-                    <Badge variant="default" className="bg-blue-600 text-white">
-                      {activeFiltersCount} active filter{activeFiltersCount !== 1 ? 's' : ''}
-                    </Badge>
-                  )}
+                  <Button 
+                    variant="ghost"
+                    size="sm"
+                    className="text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setStatusFilter("all");
+                      setOnboardingFilter("all");
+                      setStageFilter("all");
+                      setCityFilter("all");
+                    }}
+                  >
+                    Reset All
+                  </Button>
                 </div>
               </div>
 
-              <div className="p-6 space-y-6">
+              <CardContent className="p-6 space-y-6 bg-white">
                 {/* Search Row */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    <Search className="h-4 w-4 inline mr-2 text-gray-500" />
-                    Search Applications
-                  </label>
-                  <div className="relative">
-                    <Input
-                      type="text"
-                      placeholder="Search by email, name, or city..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-11"
-                    />
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    {searchQuery && (
-                      <button
-                        onClick={() => setSearchQuery("")}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      >
-                        <XCircle className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
+                <div className="relative">
+                  <Input
+                    type="text"
+                    placeholder="Search by email, name, or city..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-10 h-11 border border-gray-300 bg-white focus:border-gray-400 focus:ring-0"
+                  />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
-
-                {/* Divider */}
-                <div className="border-t border-gray-200"></div>
 
                 {/* Filter Row */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-4">
-                    Filter Options
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="space-y-2">
-                      <label className="block text-xs font-medium text-gray-600 uppercase tracking-wide">
-                        Application Status
-                      </label>
-                      <Select value={statusFilter} onValueChange={setStatusFilter}>
-                        <SelectTrigger className="w-full h-10 border-gray-300 hover:border-gray-400 focus:border-blue-500">
-                          <SelectValue placeholder="All statuses" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Statuses</SelectItem>
-                          <SelectItem value="pending">Pending Review</SelectItem>
-                          <SelectItem value="approved">Approved</SelectItem>
-                          <SelectItem value="rejected">Rejected</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <label className="block text-xs font-medium text-gray-600 uppercase tracking-wide">
-                        Current Stage
-                      </label>
-                      <Select value={stageFilter} onValueChange={setStageFilter}>
-                        <SelectTrigger className="w-full h-10 border-gray-300 hover:border-gray-400 focus:border-blue-500">
-                          <SelectValue placeholder="All stages" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Stages</SelectItem>
-                          {uniqueStages.map((stage) => (
-                            <SelectItem key={stage} value={stage}>
-                              {stage}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <label className="block text-xs font-medium text-gray-600 uppercase tracking-wide">
-                        City
-                      </label>
-                      <Select value={cityFilter} onValueChange={setCityFilter}>
-                        <SelectTrigger className="w-full h-10 border-gray-300 hover:border-gray-400 focus:border-blue-500">
-                          <SelectValue placeholder="All cities" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Cities</SelectItem>
-                          {uniqueCities.map((city) => (
-                            <SelectItem key={city} value={city}>
-                              {city}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <label className="block text-xs font-medium text-gray-600 uppercase tracking-wide">
-                        Onboarding Progress
-                      </label>
-                      <Select value={onboardingFilter} onValueChange={setOnboardingFilter}>
-                        <SelectTrigger className="w-full h-10 border-gray-300 hover:border-gray-400 focus:border-blue-500">
-                          <SelectValue placeholder="All progress" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Progress</SelectItem>
-                          <SelectItem value="started">In Progress</SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="space-y-2">
+                    <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                      APPLICATION STATUS
+                    </label>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="w-full h-10 border border-gray-300 bg-white">
+                        <SelectValue placeholder="All statuses" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Statuses</SelectItem>
+                        <SelectItem value="pending">Pending Review</SelectItem>
+                        <SelectItem value="approved">Approved</SelectItem>
+                        <SelectItem value="hired">Hired</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                      CURRENT STAGE
+                    </label>
+                    <Select value={stageFilter} onValueChange={setStageFilter}>
+                      <SelectTrigger className="w-full h-10 border border-gray-300 bg-white">
+                        <SelectValue placeholder="All stages" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Stages</SelectItem>
+                        {uniqueStages.map((stage) => (
+                          <SelectItem key={stage} value={stage}>
+                            {stage}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                      CITY
+                    </label>
+                    <Select value={cityFilter} onValueChange={setCityFilter}>
+                      <SelectTrigger className="w-full h-10 border border-gray-300 bg-white">
+                        <SelectValue placeholder="All cities" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Cities</SelectItem>
+                        {uniqueCities.map((city) => (
+                          <SelectItem key={city} value={city}>
+                            {city}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                      ONBOARDING PROGRESS
+                    </label>
+                    <Select value={onboardingFilter} onValueChange={setOnboardingFilter}>
+                      <SelectTrigger className="w-full h-10 border border-gray-300 bg-white">
+                        <SelectValue placeholder="All progress" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Progress</SelectItem>
+                        <SelectItem value="started">In Progress</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
-                {/* Active Filters & Reset */}
+                {/* Active Filters */}
                 {activeFiltersCount > 0 && (
-                  <>
-                    <div className="border-t border-gray-200"></div>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="text-sm font-medium text-gray-700">Active filters:</span>
+                  <div className="pt-4 border-t border-gray-200">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-medium text-gray-700">Active Filters:</span>
                       {searchQuery && (
-                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-0 px-3 py-1 rounded-full">
                           Search: "{searchQuery}"
                           <button
                             onClick={() => setSearchQuery("")}
-                            className="ml-2 hover:text-blue-900"
+                            className="ml-2 hover:text-blue-900 transition-colors inline-flex items-center"
                           >
                             <XCircle className="h-3 w-3" />
                           </button>
                         </Badge>
                       )}
                       {statusFilter !== "all" && (
-                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
-                          Status: {statusFilter === "pending" ? "Pending Review" : statusFilter}
+                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-0 px-3 py-1 rounded-full">
+                          Status: {statusFilter === "pending" ? "Pending Review" : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
                           <button
                             onClick={() => setStatusFilter("all")}
-                            className="ml-2 hover:text-blue-900"
+                            className="ml-2 hover:text-blue-900 transition-colors inline-flex items-center"
                           >
                             <XCircle className="h-3 w-3" />
                           </button>
                         </Badge>
                       )}
                       {stageFilter !== "all" && (
-                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-0 px-3 py-1 rounded-full">
                           Stage: {stageFilter}
                           <button
                             onClick={() => setStageFilter("all")}
-                            className="ml-2 hover:text-blue-900"
+                            className="ml-2 hover:text-blue-900 transition-colors inline-flex items-center"
                           >
                             <XCircle className="h-3 w-3" />
                           </button>
                         </Badge>
                       )}
                       {cityFilter !== "all" && (
-                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-0 px-3 py-1 rounded-full">
                           City: {cityFilter}
                           <button
                             onClick={() => setCityFilter("all")}
-                            className="ml-2 hover:text-blue-900"
+                            className="ml-2 hover:text-blue-900 transition-colors inline-flex items-center"
                           >
                             <XCircle className="h-3 w-3" />
                           </button>
                         </Badge>
                       )}
                       {onboardingFilter !== "all" && (
-                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-0 px-3 py-1 rounded-full">
                           Progress: {onboardingFilter === "started" ? "In Progress" : "Completed"}
                           <button
                             onClick={() => setOnboardingFilter("all")}
-                            className="ml-2 hover:text-blue-900"
+                            className="ml-2 hover:text-blue-900 transition-colors inline-flex items-center"
                           >
                             <XCircle className="h-3 w-3" />
                           </button>
                         </Badge>
                       )}
-                      <div className="ml-auto">
-                        <Button 
-                          variant="outline"
-                          size="sm"
-                          className="border-gray-300 hover:bg-gray-50 hover:border-gray-400"
-                          onClick={() => {
-                            setSearchQuery("");
-                            setStatusFilter("all");
-                            setOnboardingFilter("all");
-                            setStageFilter("all");
-                            setCityFilter("all");
-                          }}
-                        >
-                          <RefreshCw className="h-4 w-4 mr-2" />
-                          Reset All
-                        </Button>
-                      </div>
                     </div>
-                  </>
+                  </div>
                 )}
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
             {/* Applications Table */}
             <div className="bg-white border border-gray-200 rounded-md shadow-sm">
@@ -653,7 +640,7 @@ export default function AdminDashboard() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                                className="border-brand-blue text-brand-blue hover:bg-brand-lightBlue"
                                 onClick={() => {
                                   setSelectedApplication(null);
                                   // If report exists, show it; otherwise create a view from available data
@@ -778,13 +765,13 @@ export default function AdminDashboard() {
                               </Button>
                               
                               {/* Quick Approve/Reject for completed applications */}
-                              {app.onboardingStatus === 'completed' && (adminRole === 'super_admin' || adminRole === 'app_admin' || adminRole === 'admin_fleet') && app.status !== 'approved' && app.status !== 'rejected' && (
+                              {app.onboardingStatus === 'completed' && (adminRole === 'super_admin' || adminRole === 'app_admin' || adminRole === 'admin_fleet') && app.status !== 'approved' && app.status !== 'rejected' && app.status !== 'hired' && (
                                 <>
                                   <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                       <Button 
                                         size="sm"
-                                        className="bg-green-600 hover:bg-green-700 text-white"
+                                        className="bg-brand-shadeTeal hover:bg-brand-teal text-white shadow-md hover:shadow-lg"
                                       >
                                         <CheckCircle className="h-3 w-3 mr-1" />
                                         Approve
@@ -802,7 +789,7 @@ export default function AdminDashboard() {
                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                                         <AlertDialogAction
                                           onClick={() => handleStatusUpdate(app.email, 'approved')}
-                                          className="bg-green-600 hover:bg-green-700"
+                                          className="bg-brand-shadeTeal hover:bg-brand-teal"
                                         >
                                           Approve Application
                                         </AlertDialogAction>
@@ -815,7 +802,7 @@ export default function AdminDashboard() {
                                       <Button 
                                         size="sm"
                                         variant="outline"
-                                        className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                                        className="text-brand-shadePink hover:text-brand-pink hover:bg-brand-lightPink border-brand-pink"
                                       >
                                         <XCircle className="h-3 w-3 mr-1" />
                                         Reject
@@ -833,7 +820,7 @@ export default function AdminDashboard() {
                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                                         <AlertDialogAction
                                           onClick={() => handleStatusUpdate(app.email, 'rejected')}
-                                          className="bg-red-600 hover:bg-red-700"
+                                          className="bg-brand-shadePink hover:bg-brand-pink"
                                         >
                                           Reject Application
                                         </AlertDialogAction>
@@ -841,6 +828,39 @@ export default function AdminDashboard() {
                                     </AlertDialogContent>
                                   </AlertDialog>
                                 </>
+                              )}
+
+                              {/* Mark Hired button - only for approved applicants */}
+                              {app.status === 'approved' && (adminRole === 'super_admin' || adminRole === 'app_admin' || adminRole === 'admin_fleet') && (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button 
+                                      size="sm"
+                                      className="bg-brand-blue hover:bg-brand-shadeBlue text-white shadow-md hover:shadow-lg"
+                                    >
+                                      <UserCheck className="h-3 w-3 mr-1" />
+                                      Mark Hired
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent className="z-[200]">
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Mark Driver as Hired</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to mark this driver as hired for {app.email}?
+                                        This will update the application status to "Hired".
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleStatusUpdate(app.email, 'hired')}
+                                        className="bg-brand-blue hover:bg-brand-shadeBlue"
+                                      >
+                                        Mark Hired
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
                               )}
 
                               {/* Edit button for detailed status update */}
@@ -1032,6 +1052,7 @@ export default function AdminDashboard() {
                       <SelectContent className="z-[250] bg-white">
                         <SelectItem value="pending">Pending Review</SelectItem>
                         <SelectItem value="approved">Approved</SelectItem>
+                        <SelectItem value="hired">Hired</SelectItem>
                         <SelectItem value="rejected">Rejected</SelectItem>
                       </SelectContent>
                     </Select>
@@ -1066,7 +1087,7 @@ export default function AdminDashboard() {
               </Button>
               {(adminRole === 'super_admin' || adminRole === 'app_admin' || adminRole === 'admin_fleet') && (
                 <Button
-                  className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
+                  className="bg-brand-blue hover:bg-brand-shadeBlue w-full sm:w-auto shadow-md hover:shadow-lg"
                   onClick={() => handleStatusUpdate(selectedApplication.email, selectedApplication.status || 'pending')}
                 >
                   Update Status

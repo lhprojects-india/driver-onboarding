@@ -4,7 +4,8 @@ import { useAdminAuth } from "../../context/AdminAuthContext";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { Alert, AlertDescription } from "../../components/ui/alert";
-import { Loader2, Shield } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import LaundryheapLogo from "../../assets/logo";
 
 export default function AdminLogin() {
   const { signInWithGoogle, isLoading, isAuthenticated, isAuthorized } = useAdminAuth();
@@ -53,11 +54,11 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-lightBlue via-brand-blue to-brand-shadeBlue py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <div className="mx-auto h-16 w-16 bg-blue-600 rounded-full flex items-center justify-center mb-4 shadow-lg">
-            <Shield className="h-8 w-8 text-white" />
+          <div className="mb-4">
+            <LaundryheapLogo />
           </div>
           <h2 className="text-3xl font-bold text-gray-900">
             Laundryheap Admin
@@ -67,24 +68,24 @@ export default function AdminLogin() {
           </p>
         </div>
 
-        <Card className="shadow-xl border-0">
-          <CardHeader className="text-center pb-4">
-            <CardTitle className="text-xl">Admin Sign In</CardTitle>
-            <CardDescription>
+        <Card className="shadow-2xl border-0 rounded-2xl overflow-hidden">
+          <CardHeader className="text-center pb-4 bg-gradient-to-r from-brand-lightBlue to-brand-lightTeal">
+            <CardTitle className="text-xl font-semibold text-gray-900">Admin Sign In</CardTitle>
+            <CardDescription className="text-gray-700">
               Use your authorized Google account to access the admin panel
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6 pt-4">
-            <Alert className="bg-blue-50 border-blue-200">
-              <AlertDescription className="text-sm text-gray-700">
-                <strong className="text-blue-900">Restricted Access:</strong> Only pre-authorized email addresses can access this panel. Contact your system administrator if you need access.
+          <CardContent className="space-y-6 pt-6">
+            <Alert className="bg-brand-lightBlue border-2 border-brand-blue rounded-xl">
+              <AlertDescription className="text-sm text-gray-800">
+                <strong className="text-brand-shadeBlue">Restricted Access:</strong> Only pre-authorized email addresses can access this panel. Contact your system administrator if you need access.
               </AlertDescription>
             </Alert>
 
             <Button
               onClick={handleGoogleSignIn}
               disabled={isLoading || isSigningIn}
-              className="w-full h-12 bg-white hover:bg-gray-50 text-gray-900 border-2 border-gray-300 shadow-sm"
+              className="w-full h-12 bg-white hover:bg-gray-50 text-gray-900 border-2 border-gray-200 shadow-md hover:shadow-lg rounded-xl transition-all duration-200"
               size="lg"
             >
               {(isLoading || isSigningIn) ? (

@@ -32,23 +32,30 @@ const CancellationPolicy = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [currency, setCurrency] = useState('£'); // Default to £ (Birmingham)
+  const [city, setCity] = useState(null);
   const { canProceed, timeRemaining } = useMinimumReadTime(30);
+
+  // Cities that should not show the 10% block release fee line
+  const citiesWithoutReleaseFee = ['Birmingham', 'Manchester', 'Dublin', 'Copenhagen', 'Amsterdam'];
+  const shouldHideReleaseFee = city && citiesWithoutReleaseFee.includes(city);
 
   // Fetch currency based on user's city
   useEffect(() => {
     const fetchCurrency = async () => {
       try {
         // Get city from user data (could be from fountainData or city field)
-        const city = currentUser?.fountainData?.city || currentUser?.city;
+        const userCity = currentUser?.fountainData?.city || currentUser?.city;
         
-        if (!city) {
+        if (!userCity) {
           return;
         }
+
+        setCity(userCity);
 
         // Extract vehicle type from MOT data (same as FeeStructure page)
         const vehicleType = getVehicleTypeFromMOT(currentUser?.fountainData);
 
-        const structures = await feeStructureServices.getFeeStructuresByCity(city, vehicleType);
+        const structures = await feeStructureServices.getFeeStructuresByCity(userCity, vehicleType);
         
         if (structures?.currency) {
           setCurrency(structures.currency);
@@ -171,9 +178,11 @@ const CancellationPolicy = () => {
                 
                 <div>
                   <p className="font-semibold mb-2">Fees</p>
-                  <p className="ml-4">
-                    Release with 48+ hours' notice: 10% block release fee will be charged
-                  </p>
+                  {!shouldHideReleaseFee && (
+                    <p className="ml-4">
+                      Release with 48+ hours' notice: 10% block release fee will be charged
+                    </p>
+                  )}
                   <p className="ml-4">
                     Release with less than 48 hours' notice: Full block fee charged as a cancellation fee
                   </p>
@@ -184,9 +193,11 @@ const CancellationPolicy = () => {
                   <p className="ml-4 mb-1">
                     Block Date: 16th January at 5:00 PM ({currency}100)
                   </p>
-                  <p className="ml-4 mb-1">
-                    Released before 14th January, 5:00 PM → {currency}10 charged as block release fee
-                  </p>
+                  {!shouldHideReleaseFee && (
+                    <p className="ml-4 mb-1">
+                      Released before 14th January, 5:00 PM → {currency}10 charged as block release fee
+                    </p>
+                  )}
                   <p className="ml-4">
                     Released after 14th January, 5:00 PM → {currency}100 charged as cancellation fee
                   </p>
@@ -242,7 +253,7 @@ const CancellationPolicy = () => {
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button
-                    className=" text-white w-full max-w-xs bg-laundryheap-Red hover:bg-opacity-90"
+                    className=" text-white w-full max-w-xs bg-brand-shadePink hover:bg-brand-pink shadow-md hover:shadow-lg"
                     disabled={isSaving || isLoading || isWithdrawing}
                     showArrow={false}
                   >
@@ -260,7 +271,7 @@ const CancellationPolicy = () => {
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={handleWithdraw}
-                      className="bg-laundryheap-Red hover:bg-laundryheap-Red text-white"
+                      className="bg-brand-shadePink hover:bg-brand-pink text-white shadow-md hover:shadow-lg"
                     >
                       Withdraw Application
                     </AlertDialogAction>

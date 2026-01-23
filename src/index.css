@@ -5,50 +5,50 @@
 @layer base {
   :root {
     --background: #ffffff;
-    --foreground: #222;
+    --foreground: #1a1a1a;
 
     --card: #ffffff;
-    --card-foreground: #222;
+    --card-foreground: #1a1a1a;
 
     --popover: #ffffff;
-    --popover-foreground: #222;
+    --popover-foreground: #1a1a1a;
 
-    --primary: #1c1c1c;
-    --primary-foreground: #d2d2d2;
+    --primary: #0890F1;
+    --primary-foreground: #ffffff;
 
-    --secondary: #d2d2d2;
-    --secondary-foreground: #222;
+    --secondary: #93ECE5;
+    --secondary-foreground: #1a1a1a;
 
-    --muted: #d2d2d2;
-    --muted-foreground: #d2d2d2;
+    --muted: #F5F5F5;
+    --muted-foreground: #6B7280;
 
-    --accent: #d2d2d2;
-    --accent-foreground: #222;
+    --accent: #FFD06D;
+    --accent-foreground: #1a1a1a;
 
-    --destructive: #ff4d4d;
-    --destructive-foreground: #d2d2d2;
+    --destructive: #ED738C;
+    --destructive-foreground: #ffffff;
 
-    --border: #d2d2d2;
-    --input: #d2d2d2;
-    --ring: #222;
+    --border: #E5E7EB;
+    --input: #E5E7EB;
+    --ring: #0890F1;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: #f8f8f8;
+    --sidebar-background: #ffffff;
 
-    --sidebar-foreground: #3c3c3c;
+    --sidebar-foreground: #1a1a1a;
 
-    --sidebar-primary: #1a1a1a;
+    --sidebar-primary: #0890F1;
 
     --sidebar-primary-foreground: #ffffff;
 
-    --sidebar-accent: #f2f2f2;
+    --sidebar-accent: #BAEBFF;
 
     --sidebar-accent-foreground: #1a1a1a;
 
-    --sidebar-border: #d2d2d2;
+    --sidebar-border: #E5E7EB;
 
-    --sidebar-ring: #d2d2d2;
+    --sidebar-ring: #0890F1;
   }
 
   .dark {
@@ -110,7 +110,10 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   /* Screenshot prevention styles */
@@ -175,7 +178,7 @@
 
 @layer components {
   .laundryheap-btn {
-    @apply flex items-center justify-between gap-2 px-6 py-3 bg-laundryheap-yellow text-black font-medium rounded-full hover:bg-opacity-90 transition-all duration-300 animate-fade-in;
+    @apply flex items-center justify-between gap-2 px-6 py-3 bg-brand-yellow text-gray-900 font-semibold rounded-full hover:bg-brand-shadeYellow shadow-md hover:shadow-lg transition-all duration-300 animate-fade-in transform hover:scale-[1.02];
   }
 
   .input-container {
@@ -183,19 +186,19 @@
   }
 
   .laundryheap-input {
-    @apply w-full p-3 text-center text-black bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-laundryheap-yellow;
+    @apply w-full p-3 text-center text-gray-900 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue transition-all duration-200 shadow-sm hover:shadow-md;
   }
 
   .otp-input {
-    @apply w-12 h-12 text-center text-lg text-black bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-laundryheap-yellow;
+    @apply w-12 h-12 text-center text-lg text-gray-900 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue transition-all duration-200 shadow-sm hover:shadow-md;
   }
 
   .laundryheap-switch {
-    @apply relative inline-flex h-7 w-12 items-center rounded-full border-2 border-transparent bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-laundryheap-yellow;
+    @apply relative inline-flex h-7 w-12 items-center rounded-full border-2 border-transparent bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-blue shadow-sm;
   }
 
   .laundryheap-switch-checked {
-    @apply bg-laundryheap-yellow;
+    @apply bg-brand-teal;
   }
 
   .laundryheap-switch-thumb {
@@ -207,7 +210,7 @@
   }
 
   .laundryheap-page {
-    @apply min-h-screen w-full bg-laundryheap-blue text-white flex flex-col items-center px-4 md:px-6 pt-4 md:pt-12 pb-6 animate-fade-in;
+    @apply min-h-screen w-full bg-gradient-to-br from-brand-blue via-brand-shadeBlue to-brand-blue text-white flex flex-col items-center px-4 md:px-6 pt-4 md:pt-12 pb-6 animate-fade-in;
   }
 
   /* PhoneInput styling */
@@ -225,7 +228,7 @@
   }
 
   .phone-input-wrapper .PhoneInputInput {
-    @apply flex-1 h-[48px] p-3 text-left text-black bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-laundryheap-yellow;
+    @apply flex-1 h-[48px] p-3 text-left text-gray-900 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue transition-all duration-200 shadow-sm hover:shadow-md;
     flex: 1;
     text-align: left !important;
   }
@@ -238,7 +241,7 @@
   }
 
   .phone-input-wrapper .PhoneInputCountrySelect {
-    @apply h-[48px] min-w-[140px] px-3 bg-white border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-laundryheap-yellow hover:bg-gray-50;
+    @apply h-[48px] min-w-[140px] px-3 bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue hover:bg-gray-50 transition-all duration-200 shadow-sm hover:shadow-md;
     display: flex !important;
     align-items: center !important;
     justify-content: flex-start !important;

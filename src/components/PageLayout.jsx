@@ -32,7 +32,7 @@ function PageLayout({ children, title, subtitle, compact = false }) {
       {showProgressBar && <ProgressBar />}
       
       {title && (
-        <h1 className={`text-center text-lg md:text-xl mt-2 md:mt-6 mb-4 md:mb-8 font-medium animate-slide-up ${compact ? "text-2xl md:text-3xl" : ""}`}>
+        <h1 className={`text-center text-lg md:text-xl mt-2 md:mt-6 mb-4 md:mb-8 font-semibold animate-slide-up ${compact ? "text-2xl md:text-3xl" : ""}`}>
           {title}
         </h1>
       )}

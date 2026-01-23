@@ -51,22 +51,37 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        laundryheap: {
-          yellow: '#fcd34d',
-          blue: '#3b82f6',
-          lightRed: '#fca5a5',
-          Red: '#dc3545',
-          // Brand colors - Main
-          brandYellow: '#FFD06D',
-          brandPink: '#EF8EA2',
-          brandTeal: '#2FCCC0',
-          brandBlue: '#0890F1',
+        // Brand colors - Primary
+        brand: {
+          yellow: '#FFD06D',
+          pink: '#EF8EA2',
+          teal: '#2FCCC0',
+          blue: '#0890F1',
           // Brand colors - Shades
           shadeBlue: '#202B93',
           shadeTeal: '#04B4A8',
           shadePink: '#ED738C',
           shadeYellow: '#FFB55D',
           // Brand colors - Lights
+          lightBlue: '#BAEBFF',
+          lightTeal: '#93ECE5',
+          lightPink: '#FBB4C2',
+          lightYellow: '#FFE5AE',
+        },
+        // Legacy support (keeping for backward compatibility)
+        laundryheap: {
+          yellow: '#FFD06D',
+          blue: '#0890F1',
+          lightRed: '#FBB4C2',
+          Red: '#ED738C',
+          brandYellow: '#FFD06D',
+          brandPink: '#EF8EA2',
+          brandTeal: '#2FCCC0',
+          brandBlue: '#0890F1',
+          shadeBlue: '#202B93',
+          shadeTeal: '#04B4A8',
+          shadePink: '#ED738C',
+          shadeYellow: '#FFB55D',
           lightBlue: '#BAEBFF',
           lightTeal: '#93ECE5',
           lightPink: '#FBB4C2',
@@ -91,6 +106,9 @@ export default {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+      },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
       },
     },
   },

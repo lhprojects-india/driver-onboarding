@@ -37,6 +37,21 @@ service cloud.firestore {
               userEmail == 'ramanujan@laundryheap.com');
     }
     
+    // Helper function to check if user is admin (either hardcoded list or from admins collection)
+    // Note: We check the admins collection directly in match rules since functions can't
+    // dynamically construct paths. This helper just checks the hardcoded list.
+    function isAnyAdmin() {
+      return isAdmin();
+    }
+    
+    // Helper to check if user is admin from admins collection (used in match rules)
+    // This checks if the user's email exists in the admins collection
+    function isAdminFromCollection(userEmail) {
+      return request.auth != null && 
+             userEmail != null &&
+             exists(/databases/$(database)/documents/admins/$(userEmail.lower()));
+    }
+    
     // Helper function to check if user owns the document or is admin
     // Supports both regular tokens and custom tokens with email in claims
     // Note: Email comparison is case-sensitive - emails in Firestore should be lowercase
@@ -69,25 +84,29 @@ service cloud.firestore {
     // Fountain applicants collection - users can read their own data, admins can read all
     match /fountain_applicants/{email} {
       allow read: if isOwnerOrAdmin(email);
-      allow write: if false; // Only cloud functions can write
+      allow create, update: if false; // Only cloud functions can create/update
+      allow delete: if isAnyAdmin() || isAdminFromCollection(getUserEmail()); // Admins can delete applications
     }
     
     // Drivers collection - users can access their own data, admins can access all
     match /drivers/{email} {
       allow read: if isOwnerOrAdmin(email);
-      allow write: if canWriteForTesting(email);
+      allow create, update: if canWriteForTesting(email);
+      allow delete: if isAnyAdmin() || isAdminFromCollection(getUserEmail()); // Admins can delete driver records
     }
 
     // Availability collection - users can access their own data, admins can access all
     match /availability/{email} {
       allow read: if isOwnerOrAdmin(email);
-      allow write: if canWriteForTesting(email);
+      allow create, update: if canWriteForTesting(email);
+      allow delete: if isAnyAdmin() || isAdminFromCollection(getUserEmail()); // Admins can delete availability records
     }
 
     // Verification collection - users can access their own data, admins can access all
     match /verification/{email} {
       allow read: if isOwnerOrAdmin(email);
-      allow write: if canWriteForTesting(email);
+      allow create, update: if canWriteForTesting(email);
+      allow delete: if isAnyAdmin() || isAdminFromCollection(getUserEmail()); // Admins can delete verification records
     }
     
     // Onboarding collection - track progress
@@ -99,20 +118,21 @@ service cloud.firestore {
     // Reports collection - completed onboarding reports
     // Admins can read all reports, authenticated users can read any
     match /reports/{reportId} {
-      allow read: if isAdmin() || request.auth != null; // Admins can read all, authenticated users can read any
-      allow write: if true; // Allow writes for mock mode testing (restrict in production)
+      allow read: if isAnyAdmin() || isAdminFromCollection(getUserEmail()) || request.auth != null; // Admins can read all, authenticated users can read any
+      allow create, update: if true; // Allow writes for mock mode testing (restrict in production)
+      allow delete: if isAnyAdmin() || isAdminFromCollection(getUserEmail()); // Admins can delete reports
     }
     
     // Fee structures collection - public read, admin write only
     match /fee_structures/{city} {
       allow read: if true; // Allow all reads (public pricing information)
-      allow write: if isAdmin(); // Only admins can write
+      allow write: if isAnyAdmin() || isAdminFromCollection(getUserEmail()); // Only admins can write
     }
     
     // Facilities collection - public read, admin write only
     match /facilities/{facilityCode} {
       allow read: if true; // Allow all reads (drivers need to see facilities for their city)
-      allow write: if isAdmin(); // Only admins can write
+      allow write: if isAnyAdmin() || isAdminFromCollection(getUserEmail()); // Only admins can write
     }
     
     // Admins collection - any authenticated user can read to check if they are an admin

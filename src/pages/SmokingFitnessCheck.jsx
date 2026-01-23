@@ -206,7 +206,7 @@ const SmokingFitnessCheck = () => {
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
-                  className=" text-white w-full max-w-xs bg-laundryheap-Red hover:bg-opacity-90"
+                  className=" text-white w-full max-w-xs bg-brand-shadePink hover:bg-brand-pink shadow-md hover:shadow-lg"
                   disabled={isSaving || isLoading || isWithdrawing}
                   showArrow={false}
                 >
@@ -224,7 +224,7 @@ const SmokingFitnessCheck = () => {
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleWithdraw}
-                    className="bg-laundryheap-Red hover:bg-laundryheap-Red/50 text-white"
+                    className="bg-brand-shadePink hover:bg-brand-pink text-white shadow-md hover:shadow-lg"
                   >
                     Withdraw Application
                   </AlertDialogAction>
