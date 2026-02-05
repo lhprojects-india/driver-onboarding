@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+import { getPaymentCycleContent } from "../lib/paymentCycleConfig";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { acknowledgementServices } from "@/lib/firebase-services";
@@ -39,6 +40,9 @@ const PaymentCycleSchedule = () => {
     }
   }, [currentUser]);
 
+  const city = currentUser?.fountainData?.city || currentUser?.city;
+  const content = getPaymentCycleContent(city);
+
   const handleContinue = async () => {
     if (!policyUnderstood) {
       toast({
@@ -61,11 +65,11 @@ const PaymentCycleSchedule = () => {
 
       // Attempt server-side immutable acknowledgement
       const res = await acknowledgementServices.acknowledgePaymentCycleSchedule();
-      
+
       // Always update local state regardless of which method was used
       // If user came from summary, return to summary instead of continuing flow
       const shouldReturnToSummary = searchParams.get('from') === 'summary';
-      
+
       if (res.success) {
         // Cloud function succeeded, update local state
         await updateUserData(dataToSave);
@@ -126,39 +130,60 @@ const PaymentCycleSchedule = () => {
         <h2 className="text-center text-3xl font-bold mb-6 animate-slide-down">
           Payment Cycle &amp; Block Schedule
         </h2>
-        
+
         <div className="w-full max-w-2xl animate-fade-in">
           <div className="bg-gray-50 border border-gray-300 rounded-lg p-6 max-h-[500px] overflow-y-auto mb-6">
             <div className="text-left space-y-6 text-sm text-gray-900">
               <div>
                 <p className="font-semibold mb-3 text-base">Payment Cycle</p>
                 <div className="ml-4 space-y-2">
-                  <p>
-                    Payments are processed on a weekly basis. Fees for the blocks you operate in one week are paid in arrears the following week.
-                  </p>
-                  <p>
-                    For example, if you operate blocks between 1 January and 7 January, you will receive the payment breakdown in the following week (8 January to 14 January) by Wednesday, and the payment will be credited to your account by Friday end of day. In some cases, due to banking processing times, the credit may reflect by Monday.
-                  </p>
+                  {content.paymentCycle.text && (
+                    <p>
+                      {content.paymentCycle.text}
+                    </p>
+                  )}
+                  {content.paymentCycle.example && (
+                    <p>
+                      {content.paymentCycle.example}
+                    </p>
+                  )}
+                  {content.paymentCycle.details && (
+                    <ul className="list-disc ml-5 space-y-1">
+                      {content.paymentCycle.details.map((detail, index) => (
+                        <li key={index}>{detail}</li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               </div>
-              
+
               <div>
                 <p className="font-semibold mb-3 text-base">Scheduling</p>
                 <div className="ml-4 space-y-2">
                   <p>
-                    Blocks are published two weeks in advance. Every Monday at 10:00 AM, we release blocks for the upcoming week.
+                    {content.scheduling.text}
                   </p>
-                  <p>
-                    For example, if 1st January falls on a Monday, blocks published on that day will be for the week of 15th January to 20th January.
-                  </p>
-                  <p>
-                    This advance scheduling helps you plan your availability and work schedule upfront.
-                  </p>
+                  {content.scheduling.details ? (
+                    <ul className="list-disc ml-5 space-y-1">
+                      {content.scheduling.details.map((detail, index) => (
+                        <li key={index}>{detail}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <>
+                      <p>
+                        {content.scheduling.example}
+                      </p>
+                      <p>
+                        {content.scheduling.note}
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
           </div>
-          
+
           {searchParams.get('from') !== 'summary' && (
             <CheckboxWithLabel
               label="I understand the policy"
@@ -167,7 +192,7 @@ const PaymentCycleSchedule = () => {
             />
           )}
         </div>
-        
+
         {searchParams.get('from') !== 'summary' && !canProceed && (
           <div className="w-full max-w-md text-center mt-4">
             <p className="text-sm text-muted-foreground">
@@ -175,7 +200,7 @@ const PaymentCycleSchedule = () => {
             </p>
           </div>
         )}
-        
+
         <div className="w-full flex flex-col items-center space-y-4 mt-6">
           {searchParams.get('from') === 'summary' ? (
             <UIButton

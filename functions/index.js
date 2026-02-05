@@ -28,6 +28,7 @@ const initializeCollections = require("./utils/initialize-collections-function")
 
 // Admin
 const initializeSuperAdmin = require("./admin/initialize-super-admin");
+const getAdminDashboardData = require("./admin/get-dashboard-data");
 
 // Export all functions
 exports.fountainWebhook = fountainWebhook.fountainWebhook;
@@ -44,3 +45,4 @@ exports.listCollections = listCollections.listCollections;
 exports.initializeCollections = initializeCollections.initializeCollections;
 exports.cleanupPlaceholders = initializeCollections.cleanupPlaceholders;
 exports.initializeSuperAdmin = initializeSuperAdmin.initializeSuperAdmin;
+exports.getAdminDashboardData = getAdminDashboardData.getAdminDashboardData;

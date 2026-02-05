@@ -60,10 +60,10 @@ const FeeStructure = () => {
       try {
         // Get city from user data (could be from fountainData or city field)
         const city = currentUser?.fountainData?.city || currentUser?.city;
-        
+
         // Extract vehicle type from MOT data with debug logging
         const vehicleType = getVehicleTypeFromMOT(currentUser?.fountainData, true);
-        
+
         if (!city) {
           setFeeStructures(defaultFeeStructure);
           setLoadingFeeStructures(false);
@@ -71,7 +71,7 @@ const FeeStructure = () => {
         }
 
         const structures = await feeStructureServices.getFeeStructuresByCity(city, vehicleType);
-        
+
         // If no structure found for the city, use default
         if (!structures) {
           setFeeStructures(defaultFeeStructure);
@@ -87,7 +87,7 @@ const FeeStructure = () => {
               currentUser?.fountainData?.vehicle
             );
           }
-          
+
           setFeeStructures(structures);
         }
       } catch (error) {
@@ -137,7 +137,7 @@ const FeeStructure = () => {
 
       // Attempt server-side immutable acknowledgement
       const res = await acknowledgementServices.acknowledgeFeeStructure();
-      
+
       // Always update local state regardless of which method was used
       if (res.success) {
         // Cloud function succeeded, update local state
@@ -215,12 +215,12 @@ const FeeStructure = () => {
   // Calculate example earnings
   const calculateExample = (block) => {
     if (!block) return null;
-    
+
     const extraTasks = 5;
     const totalTasks = block.includedTasks + extraTasks;
     const extraEarnings = extraTasks * block.additionalTaskFee;
     const totalEarnings = block.minimumFee + extraEarnings;
-    
+
     return {
       extraTasks,
       totalTasks,
@@ -230,11 +230,11 @@ const FeeStructure = () => {
   };
 
   const currency = getCurrency();
-  
+
   // Get all blocks sorted by density (low, medium, high)
   const getAllBlocks = () => {
     if (!feeStructures?.blocks) return [];
-    
+
     const densityOrder = { 'low': 1, 'medium': 2, 'high': 3 };
     return [...feeStructures.blocks].sort((a, b) => {
       const orderA = densityOrder[a.density] || 999;
@@ -242,7 +242,7 @@ const FeeStructure = () => {
       return orderA - orderB;
     });
   };
-  
+
   const allBlocks = getAllBlocks();
 
   // Loading state
@@ -287,6 +287,9 @@ const FeeStructure = () => {
               <p className="font-medium">
                 Only successfully completed tasks count toward your pay. Tasks that are failed or not delivered/picked up are not paid.
               </p>
+              <p className="font-medium">
+                Please be informed that the fee mentioned is inclusive of the mileage.
+              </p>
             </CardContent>
           </Card>
 
@@ -300,7 +303,7 @@ const FeeStructure = () => {
                   See how minimum + extra tasks add up for different route densities.
                 </p>
               </div>
-              
+
               {allBlocks.map((block, index) => {
                 const example = calculateExample(block);
                 const densityColors = {
@@ -309,7 +312,7 @@ const FeeStructure = () => {
                   'high': 'border-green-200'
                 };
                 const borderColor = densityColors[block.density] || 'border-blue-200';
-                
+
                 return (
                   <Card key={index} className={borderColor}>
                     <CardHeader>

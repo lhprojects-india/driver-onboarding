@@ -32,79 +32,19 @@ const COLLECTIONS = {
 // Admin Services
 export const adminServices = {
   // Get all applications (show all fountain_applicants)
+  // Get all applications (using Cloud Function for performance)
   async getAllApplications() {
     try {
-      // Query fountain_applicants collection (source of truth)
-      const fountainApplicantsRef = collection(db, COLLECTIONS.FOUNTAIN_APPLICANTS);
-      const fountainQuerySnapshot = await getDocs(fountainApplicantsRef);
-      const applications = [];
+      const getDashboardData = httpsCallable(functions, 'getAdminDashboardData');
+      const result = await getDashboardData();
+      const { applications } = result.data;
 
-      for (const fountainDoc of fountainQuerySnapshot.docs) {
-        const fountainData = fountainDoc.data();
-        const normalizedEmail = fountainDoc.id; // Already lowercase in fountain_applicants
-        
-        // Try to get driver data if it exists (optional - for onboarding progress)
-        // Try both normalized and original email format in drivers (in case of case mismatch)
-        const driverRef = doc(db, COLLECTIONS.DRIVERS, normalizedEmail);
-        let driverDoc = null;
-        let driverData = {};
-        let driverEmail = normalizedEmail;
-        
-        try {
-          driverDoc = await getDoc(driverRef);
-          
-          // If not found with normalized email, try with the email from fountain data
-          if (!driverDoc.exists() && fountainData.email && fountainData.email !== normalizedEmail) {
-            const driverRefOriginal = doc(db, COLLECTIONS.DRIVERS, fountainData.email);
-            const driverDocOriginal = await getDoc(driverRefOriginal);
-            if (driverDocOriginal.exists()) {
-              driverDoc = driverDocOriginal;
-              driverEmail = fountainData.email;
-            }
-          }
-          
-          if (driverDoc?.exists()) {
-            driverData = driverDoc.data();
-            driverEmail = driverDoc.id; // Use the actual document ID from drivers
-          }
-        } catch (error) {
-          // Continue even if driver data check fails
-        }
-
-        // Get additional data from other collections (use driverEmail if available, otherwise normalizedEmail)
-        const emailToUse = driverEmail || normalizedEmail;
-        const [availabilityData, verificationData, reportData] = await Promise.all([
-          this.getAvailabilityData(emailToUse),
-          this.getVerificationData(emailToUse),
-          this.getReportByEmail(emailToUse)
-        ]);
-
-        // Merge fountain_applicants data with optional drivers data
-        applications.push({
-          id: normalizedEmail,
-          email: normalizedEmail,
-          // Fountain data (primary source)
-          ...fountainData,
-          // Driver data (onboarding progress, status, etc.) - only if exists
-          ...driverData,
-          // Ensure email is set correctly
-          email: normalizedEmail,
-          // Additional collections data
-          availability: availabilityData,
-          verification: verificationData,
-          report: reportData,
-          // Use fountain createdAt if available, otherwise driver createdAt
-          createdAt: fountainData.createdAt?.toDate?.() || driverData.createdAt?.toDate?.() || new Date(),
-          updatedAt: driverData.updatedAt?.toDate?.() || fountainData.updatedAt?.toDate?.() || new Date(),
-        });
-      }
-
-      // Sort by creation date (newest first) - using fountain_applicants creation date
-      return applications.sort((a, b) => {
-        const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
-        const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
-        return dateB - dateA;
-      });
+      return applications.map(app => ({
+        ...app,
+        // Ensure dates are parsed back to Date objects if needed for UI components
+        createdAt: app.createdAt ? new Date(app.createdAt) : new Date(),
+        updatedAt: app.updatedAt ? new Date(app.updatedAt) : new Date(),
+      }));
     } catch (error) {
       console.error('Error getting all applications:', error);
       return [];
@@ -115,13 +55,13 @@ export const adminServices = {
   async checkEmailInBothCollections(email) {
     try {
       const normalizedEmail = email.toLowerCase().trim();
-      
+
       // Check fountain_applicants first (prioritized)
       const fountainDoc = await getDoc(doc(db, COLLECTIONS.FOUNTAIN_APPLICANTS, normalizedEmail));
-      
+
       // Check drivers with both normalized and original email
       const driverDocNormalized = await getDoc(doc(db, COLLECTIONS.DRIVERS, normalizedEmail));
-      const driverDocOriginal = email !== normalizedEmail 
+      const driverDocOriginal = email !== normalizedEmail
         ? await getDoc(doc(db, COLLECTIONS.DRIVERS, email))
         : null;
 
@@ -153,7 +93,7 @@ export const adminServices = {
     try {
       const availabilityRef = doc(db, COLLECTIONS.AVAILABILITY, email);
       const availabilityDoc = await getDoc(availabilityRef);
-      
+
       if (availabilityDoc.exists()) {
         return availabilityDoc.data();
       }
@@ -169,7 +109,7 @@ export const adminServices = {
     try {
       const verificationRef = doc(db, COLLECTIONS.VERIFICATION, email);
       const verificationDoc = await getDoc(verificationRef);
-      
+
       if (verificationDoc.exists()) {
         return verificationDoc.data();
       }
@@ -186,7 +126,7 @@ export const adminServices = {
       const reportsRef = collection(db, COLLECTIONS.REPORTS);
       const q = query(reportsRef, where('driverEmail', '==', email));
       const querySnapshot = await getDocs(q);
-      
+
       if (!querySnapshot.empty) {
         // Get the most recent report
         const reports = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -208,7 +148,7 @@ export const adminServices = {
     try {
       const reportRef = doc(db, COLLECTIONS.REPORTS, reportId);
       const reportDoc = await getDoc(reportRef);
-      
+
       if (reportDoc.exists()) {
         return { id: reportDoc.id, ...reportDoc.data() };
       }
@@ -249,20 +189,20 @@ export const adminServices = {
   async createMockReport(email, driverData) {
     try {
       const reportId = `REPORT_${Date.now()}_${email.replace(/[@.]/g, "_")}`;
-      
+
       // Fetch latest driver record from Firestore so acknowledgements/progress are accurate
       const driverRef = doc(db, COLLECTIONS.DRIVERS, email);
       const driverSnap = await getDoc(driverRef);
       const driverRecord = driverSnap.exists() ? driverSnap.data() : (driverData || {});
-      
+
       // Fetch fountain data to get vehicle type from MOT
       const fountainRef = doc(db, COLLECTIONS.FOUNTAIN_APPLICANTS, email);
       const fountainSnap = await getDoc(fountainRef);
       const fountainData = fountainSnap.exists() ? fountainSnap.data() : null;
-      
+
       // Extract vehicle type from fountain data using MOT
-      const vehicleTypeFromFountain = fountainData?.fountainData 
-        ? getVehicleTypeFromMOT(fountainData.fountainData) 
+      const vehicleTypeFromFountain = fountainData?.fountainData
+        ? getVehicleTypeFromMOT(fountainData.fountainData)
         : null;
 
       // Get additional data
@@ -450,13 +390,13 @@ export const adminServices = {
       // Update driver document - reset status but keep personal info and Fountain data
       const driverRef = doc(db, COLLECTIONS.DRIVERS, email);
       const driverDoc = await getDoc(driverRef);
-      
+
       if (!driverDoc.exists()) {
         return { success: false, message: 'Driver not found' };
       }
-      
+
       const currentData = driverDoc.data();
-      
+
       // Keep essential data but reset onboarding status and progress fields
       await updateDoc(driverRef, {
         onboardingStatus: 'started',
@@ -514,7 +454,7 @@ export const adminServices = {
         resetAt: serverTimestamp(),
         resetBy: 'admin',
       });
-      
+
       // Optional: Clear availability and verification data
       // Uncomment if you want to also clear these
       /*
@@ -525,7 +465,7 @@ export const adminServices = {
         deleteDoc(verificationRef)
       ]);
       */
-      
+
       return { success: true, message: 'Driver progress reset successfully' };
     } catch (error) {
       console.error('Error resetting driver progress:', error);
@@ -538,7 +478,7 @@ export const adminServices = {
     try {
       const normalizedEmail = email.toLowerCase().trim();
       const errors = [];
-      
+
       // Delete from fountain_applicants (source of truth for applications list)
       try {
         const fountainRef = doc(db, COLLECTIONS.FOUNTAIN_APPLICANTS, normalizedEmail);
@@ -549,22 +489,22 @@ export const adminServices = {
           errors.push(`fountain_applicants: ${error.message}`);
         }
       }
-      
+
       // Delete all reports associated with this email
       try {
         const reportsRef = collection(db, COLLECTIONS.REPORTS);
         const reportsQuery = query(reportsRef, where('driverEmail', '==', normalizedEmail));
         const reportsSnapshot = await getDocs(reportsQuery);
-        
+
         const deletePromises = reportsSnapshot.docs.map(reportDoc => deleteDoc(reportDoc.ref));
         await Promise.all(deletePromises);
       } catch (error) {
         errors.push(`reports: ${error.message}`);
       }
-      
+
       // Delete from other collections
       const collections = [COLLECTIONS.DRIVERS, COLLECTIONS.AVAILABILITY, COLLECTIONS.VERIFICATION];
-      
+
       for (const collectionName of collections) {
         try {
           const docRef = doc(db, collectionName, normalizedEmail);
@@ -576,7 +516,7 @@ export const adminServices = {
           }
         }
       }
-      
+
       // If there were any errors, log them but still return success if main deletions worked
       if (errors.length > 0) {
         console.warn('Some deletions had errors:', errors);
@@ -587,7 +527,7 @@ export const adminServices = {
           return false;
         }
       }
-      
+
       return true;
     } catch (error) {
       console.error('Error deleting application:', error);
@@ -621,13 +561,13 @@ export const adminServices = {
     try {
       const normalizedCity = city.toLowerCase().trim();
       const feeStructureRef = doc(db, COLLECTIONS.FEE_STRUCTURES, normalizedCity);
-      
+
       await setDoc(feeStructureRef, {
         city: city,
         ...feeStructureData,
         updatedAt: serverTimestamp(),
       }, { merge: true });
-      
+
       return true;
     } catch (error) {
       console.error('Error setting fee structure:', error);
@@ -704,7 +644,7 @@ export const adminServices = {
   async getApplicationStats() {
     try {
       const applications = await this.getAllApplications();
-      
+
       const stats = {
         total: applications.length,
         pending: applications.filter(app => !app.status || app.status === 'pending').length,
@@ -774,7 +714,7 @@ export const adminServices = {
       }
 
       const facilityRef = doc(db, COLLECTIONS.FACILITIES, facilityCode);
-      
+
       await setDoc(facilityRef, {
         city: facilityData.city || facilityData.City,
         facility: facilityCode,
@@ -782,7 +722,7 @@ export const adminServices = {
         createdAt: facilityData.createdAt || serverTimestamp(),
         updatedAt: serverTimestamp(),
       }, { merge: true });
-      
+
       return true;
     } catch (error) {
       console.error('Error setting facility:', error);
@@ -873,7 +813,7 @@ export const adminServices = {
       const normalizedEmail = email.toLowerCase().trim();
       const adminRef = doc(db, COLLECTIONS.ADMINS, normalizedEmail);
       const adminDoc = await getDoc(adminRef);
-      
+
       if (adminDoc.exists()) {
         return {
           id: adminDoc.id,
@@ -892,7 +832,7 @@ export const adminServices = {
   async setAdmin(email, adminData) {
     try {
       const normalizedEmail = email.toLowerCase().trim();
-      
+
       // Validate role
       const validRoles = ['super_admin', 'app_admin', 'admin_fleet', 'admin_view'];
       if (!validRoles.includes(adminData.role)) {
@@ -905,7 +845,7 @@ export const adminServices = {
         const existingSuperAdmin = existingAdmins.find(
           admin => admin.role === 'super_admin' && admin.email !== normalizedEmail
         );
-        
+
         if (existingSuperAdmin) {
           throw new Error('A super admin already exists. Only one super admin is allowed.');
         }
@@ -916,10 +856,11 @@ export const adminServices = {
         email: normalizedEmail,
         name: adminData.name || '',
         role: adminData.role,
+        accessibleCities: adminData.accessibleCities || [],
         createdAt: adminData.createdAt || serverTimestamp(),
         updatedAt: serverTimestamp(),
       }, { merge: true });
-      
+
       return true;
     } catch (error) {
       console.error('Error setting admin:', error);
@@ -931,7 +872,7 @@ export const adminServices = {
   async deleteAdmin(email) {
     try {
       const normalizedEmail = email.toLowerCase().trim();
-      
+
       // Check if this is the last super_admin
       const admin = await this.getAdminByEmail(normalizedEmail);
       if (admin && admin.role === 'super_admin') {
@@ -941,7 +882,7 @@ export const adminServices = {
           throw new Error('Cannot delete the last super admin. Please create another super admin first.');
         }
       }
-      
+
       const adminRef = doc(db, COLLECTIONS.ADMINS, normalizedEmail);
       await deleteDoc(adminRef);
       return true;
@@ -958,7 +899,7 @@ export const adminServices = {
       if (!admin) return false;
 
       const role = admin.role;
-      
+
       // Permission mapping
       const permissions = {
         'super_admin': ['view', 'edit', 'create', 'delete', 'manage_admins', 'edit_fee_structure', 'edit_facilities'],
@@ -980,7 +921,7 @@ export const adminServices = {
   async initializeSuperAdmin(email, name = '', useCloudFunction = false) {
     try {
       const normalizedEmail = email.toLowerCase().trim();
-      
+
       // Option 1: Use Cloud Function (recommended for production)
       if (useCloudFunction) {
         try {
@@ -991,11 +932,11 @@ export const adminServices = {
           // Fall through to direct write
         }
       }
-      
+
       // Option 2: Direct Firestore write (for development or if Cloud Function fails)
       // Check if any admins exist
       const existingAdmins = await this.getAllAdmins();
-      
+
       if (existingAdmins.length > 0) {
         // Check if super_admin already exists
         const superAdminExists = existingAdmins.some(admin => admin.role === 'super_admin');
@@ -1003,13 +944,13 @@ export const adminServices = {
           throw new Error('A super admin already exists. Cannot initialize another one.');
         }
       }
-      
+
       // Create the first super admin
       const success = await this.setAdmin(normalizedEmail, {
         name: name || normalizedEmail.split('@')[0],
         role: 'super_admin'
       });
-      
+
       if (success) {
         return { success: true, message: `Super admin ${normalizedEmail} created successfully` };
       } else {

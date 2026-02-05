@@ -11,26 +11,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../../components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
 import { useToast } from "../../hooks/use-toast";
-import { Plus, Edit, Trash2, Save, X, Users, Shield, ShieldCheck, Eye } from "lucide-react";
+import { Plus, Edit, Trash2, Save, X, Users, Shield, ShieldCheck, Eye, MapPin } from "lucide-react";
 
 const ROLE_CONFIG = {
   super_admin: {
     label: 'Super Admin',
     description: 'Can create, edit, and manage everything including admins',
     icon: ShieldCheck,
-    color: 'bg-purple-100 text-purple-800 border-purple-200'
+    color: 'bg-indigo-100 text-indigo-800 border-indigo-200'
   },
   app_admin: {
     label: 'App Admin',
     description: 'Can manage fleet/view admins, view all data, and edit fee structures & facilities',
     icon: Shield,
-    color: 'bg-indigo-100 text-indigo-800 border-indigo-200'
+    color: 'bg-brand-lightBlue text-brand-shadeBlue border-brand-blue'
   },
   admin_fleet: {
     label: 'Fleet Admin',
-    description: 'Can approve/reject applications, edit fee structure and add facilities',
+    description: 'Can approve/reject applications, view fee structure and facilities',
     icon: Shield,
-    color: 'bg-blue-100 text-blue-800 border-blue-200'
+    color: 'bg-brand-lightTeal text-brand-shadeTeal border-brand-teal'
   },
   admin_view: {
     label: 'View Admin',
@@ -47,10 +47,12 @@ export default function AdminManager() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState(null);
+  const [availableCities, setAvailableCities] = useState([]);
   const [formData, setFormData] = useState({
     email: '',
     name: '',
-    role: 'admin_view'
+    role: 'admin_view',
+    accessibleCities: []
   });
   const [currentUserRole, setCurrentUserRole] = useState(null);
 
@@ -58,15 +60,16 @@ export default function AdminManager() {
     loadAdmins();
     loadCurrentUserRole();
     checkAndInitializeSuperAdmin();
+    loadCities();
   }, [currentUser]);
 
   const checkAndInitializeSuperAdmin = async () => {
     // Only check if user is authorized (but might not have role yet)
     if (!currentUser?.email) return;
-    
+
     try {
       const admins = await adminServices.getAllAdmins();
-      
+
       // If no admins exist and current user is hari@laundryheap.com, auto-initialize
       if (admins.length === 0 && currentUser.email.toLowerCase() === 'hari@laundryheap.com') {
         try {
@@ -103,6 +106,16 @@ export default function AdminManager() {
     }
   };
 
+  const loadCities = async () => {
+    try {
+      const structures = await adminServices.getAllFeeStructures();
+      const cities = Object.keys(structures).sort();
+      setAvailableCities(cities);
+    } catch (error) {
+      console.error('Error loading cities:', error);
+    }
+  };
+
   const loadCurrentUserRole = async () => {
     if (!currentUser?.email) return;
     try {
@@ -116,7 +129,7 @@ export default function AdminManager() {
   // Allow access if user is hari@laundryheap.com and no admins exist yet (for initial setup)
   const canManageAdmins = currentUserRole === 'super_admin' || currentUserRole === 'app_admin' ||
     (currentUser?.email?.toLowerCase() === 'hari@laundryheap.com' && admins.length === 0);
-  
+
   // app_admin can only create/manage admin_fleet and admin_view
   const canManageRole = (role) => {
     if (currentUserRole === 'super_admin') return true;
@@ -130,7 +143,8 @@ export default function AdminManager() {
     setFormData({
       email: '',
       name: '',
-      role: 'admin_view'
+      role: 'admin_view',
+      accessibleCities: []
     });
     setEditingAdmin(null);
     setIsDialogOpen(true);
@@ -140,7 +154,8 @@ export default function AdminManager() {
     setFormData({
       email: admin.email,
       name: admin.name || '',
-      role: admin.role || 'admin_view'
+      role: admin.role || 'admin_view',
+      accessibleCities: admin.accessibleCities || []
     });
     setEditingAdmin(admin.email);
     setIsDialogOpen(true);
@@ -188,7 +203,8 @@ export default function AdminManager() {
 
       await adminServices.setAdmin(formData.email, {
         name: formData.name,
-        role: formData.role
+        role: formData.role,
+        accessibleCities: formData.accessibleCities
       });
 
       toast({
@@ -230,13 +246,24 @@ export default function AdminManager() {
   const getRoleBadge = (role) => {
     const config = ROLE_CONFIG[role] || ROLE_CONFIG.admin_view;
     const Icon = config.icon;
-    
+
     return (
       <Badge className={`${config.color} flex items-center gap-1`}>
         <Icon className="h-3 w-3" />
         {config.label}
       </Badge>
     );
+  };
+
+  const toggleCity = (city) => {
+    setFormData(prev => {
+      const current = prev.accessibleCities || [];
+      if (current.includes(city)) {
+        return { ...prev, accessibleCities: current.filter(c => c !== city) };
+      } else {
+        return { ...prev, accessibleCities: [...current, city] };
+      }
+    });
   };
 
   if (isLoading) {
@@ -274,7 +301,7 @@ export default function AdminManager() {
             <div className="flex gap-2">
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button onClick={handleCreateNew} className="bg-blue-600 hover:bg-blue-700">
+                  <Button onClick={handleCreateNew} className="bg-brand-blue hover:bg-brand-shadeBlue">
                     <Plus className="h-4 w-4 mr-2" />
                     Add Admin
                   </Button>
@@ -371,13 +398,49 @@ export default function AdminManager() {
                         </p>
                       )}
                     </div>
+
+                    {(formData.role === 'admin_fleet' || formData.role === 'admin_view') && (
+                      <div className="space-y-2">
+                        <Label>Accessible Cities</Label>
+                        <div className="border rounded-md p-4 max-h-48 overflow-y-auto bg-gray-50">
+                          {availableCities.length > 0 ? (
+                            <div className="space-y-2">
+                              {availableCities.map((city) => (
+                                <div key={city} className="flex items-center space-x-2">
+                                  <input
+                                    type="checkbox"
+                                    id={`city-${city}`}
+                                    checked={formData.accessibleCities.includes(city)}
+                                    onChange={() => toggleCity(city)}
+                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                  />
+                                  <label
+                                    htmlFor={`city-${city}`}
+                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                  >
+                                    {city}
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-500 text-center py-2">No active cities found. Create a fee structure first.</p>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          {formData.accessibleCities.length === 0
+                            ? "Selecting no cities grants access to ALL cities."
+                            : `${formData.accessibleCities.length} cities selected.`}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                       Cancel
                     </Button>
-                    <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">
+                    <Button onClick={handleSave} className="bg-brand-blue hover:bg-brand-shadeBlue">
                       <Save className="h-4 w-4 mr-2" />
                       {editingAdmin ? 'Update' : 'Create'}
                     </Button>
@@ -409,7 +472,7 @@ export default function AdminManager() {
                     <TableHead>Email</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Role</TableHead>
-                    <TableHead>Description</TableHead>
+                    <TableHead>Access</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -417,7 +480,8 @@ export default function AdminManager() {
                   {admins.map((admin) => {
                     const config = ROLE_CONFIG[admin.role] || ROLE_CONFIG.admin_view;
                     const isCurrentUser = admin.email === currentUser?.email;
-                    
+                    const restrictedCities = admin.accessibleCities && admin.accessibleCities.length > 0;
+
                     return (
                       <TableRow key={admin.email} className={isCurrentUser ? 'bg-blue-50' : ''}>
                         <TableCell className="font-medium">
@@ -428,8 +492,23 @@ export default function AdminManager() {
                         </TableCell>
                         <TableCell>{admin.name || 'N/A'}</TableCell>
                         <TableCell>{getRoleBadge(admin.role)}</TableCell>
-                        <TableCell className="text-sm text-gray-600">
-                          {config.description}
+                        <TableCell>
+                          {restrictedCities ? (
+                            <div className="flex flex-wrap gap-1">
+                              {admin.accessibleCities.slice(0, 3).map(city => (
+                                <Badge key={city} variant="outline" className="text-xs bg-gray-50">
+                                  {city}
+                                </Badge>
+                              ))}
+                              {admin.accessibleCities.length > 3 && (
+                                <Badge variant="outline" className="text-xs bg-gray-50">
+                                  +{admin.accessibleCities.length - 3}
+                                </Badge>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-sm text-gray-500 italic">All Cities</span>
+                          )}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
@@ -447,7 +526,7 @@ export default function AdminManager() {
                                 <Button
                                   variant="destructive"
                                   size="sm"
-                                  className="bg-red-600 hover:bg-red-700"
+                                  className="bg-brand-pink hover:bg-brand-shadePink text-white"
                                   disabled={isCurrentUser || !canManageRole(admin.role)}
                                 >
                                   <Trash2 className="h-4 w-4 mr-1" />
@@ -458,7 +537,7 @@ export default function AdminManager() {
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Delete Admin</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Are you sure you want to delete admin {admin.name || admin.email}? 
+                                    Are you sure you want to delete admin {admin.name || admin.email}?
                                     This action cannot be undone. They will lose access to the admin panel.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
@@ -466,7 +545,7 @@ export default function AdminManager() {
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                                   <AlertDialogAction
                                     onClick={() => handleDelete(admin.email, admin.name)}
-                                    className="bg-red-600 hover:bg-red-700"
+                                    className="bg-brand-pink hover:bg-brand-shadePink text-white"
                                   >
                                     Delete
                                   </AlertDialogAction>

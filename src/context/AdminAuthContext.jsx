@@ -16,16 +16,16 @@ export function AdminAuthProvider({ children }) {
   const [adminRole, setAdminRole] = useState(null);
   const { toast } = useToast();
   const location = useLocation();
-  
+
   // Use ref to track admin route status - updates immediately, no async delays
   const isAdminRouteRef = useRef(false);
-  
+
   // Update ref immediately when route changes
   useEffect(() => {
     const isAdmin = location.pathname.startsWith('/admin');
     isAdminRouteRef.current = isAdmin;
   }, [location.pathname]);
-  
+
   // Check if current route is an admin route
   const isAdminRoute = location.pathname.startsWith('/admin');
 
@@ -37,7 +37,7 @@ export function AdminAuthProvider({ children }) {
     // Completely skip all auth processing for driver routes
     const currentPath = location.pathname;
     const isCurrentlyAdminRoute = currentPath.startsWith('/admin');
-    
+
     if (!isCurrentlyAdminRoute) {
       // Not on admin route - completely disable admin auth context
       // Don't set up any listeners, don't check anything
@@ -50,9 +50,9 @@ export function AdminAuthProvider({ children }) {
         // Cleanup function - nothing to clean up since no listener was set
       };
     }
-    
+
     let isListenerActive = true;
-    
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       // CRITICAL: Check ref FIRST (synchronous, no async delay)
       // This prevents ANY processing if not on admin route
@@ -60,12 +60,12 @@ export function AdminAuthProvider({ children }) {
         // Silently ignore - not on admin route
         return;
       }
-      
+
       // Also check if listener was disabled
       if (!isListenerActive) {
         return;
       }
-      
+
       // Double-check current path (for safety)
       const checkPath = window.location.pathname;
       if (!checkPath || !checkPath.startsWith('/admin')) {
@@ -75,7 +75,7 @@ export function AdminAuthProvider({ children }) {
       if (firebaseUser) {
         // Get email from user object or token claims
         let userEmail = firebaseUser.email;
-        
+
         if (!userEmail && firebaseUser.accessToken) {
           try {
             const idTokenResult = await firebaseUser.getIdTokenResult();
@@ -84,7 +84,7 @@ export function AdminAuthProvider({ children }) {
             // Silently handle token error
           }
         }
-        
+
         // If no email, can't check authorization
         if (!userEmail) {
           setIsAuthenticated(false);
@@ -93,20 +93,22 @@ export function AdminAuthProvider({ children }) {
           setIsLoading(false);
           return;
         }
-        
+
         // User is authenticated, now check authorization (only on admin routes)
         const authorized = await checkAdminAuthorization(userEmail);
-        
+
         if (authorized) {
-          // Fetch admin role from admins collection
+          // Fetch admin role and accessible cities from admins collection
           let role = null;
+          let accessibleCities = [];
           try {
             const admin = await adminServices.getAdminByEmail(userEmail);
             role = admin?.role || null;
+            accessibleCities = admin?.accessibleCities || [];
           } catch (error) {
-            console.error('Error fetching admin role:', error);
+            console.error('Error fetching admin data:', error);
           }
-          
+
           setIsAuthenticated(true);
           setIsAuthorized(true);
           setAdminRole(role);
@@ -115,7 +117,8 @@ export function AdminAuthProvider({ children }) {
             uid: firebaseUser.uid,
             displayName: firebaseUser.displayName,
             photoURL: firebaseUser.photoURL,
-            role: role
+            role: role,
+            accessibleCities: accessibleCities
           });
         } else {
           // User is authenticated but not authorized for admin
@@ -150,10 +153,10 @@ export function AdminAuthProvider({ children }) {
   // Check if email is authorized - ONLY check admins collection (single source of truth)
   const checkAdminAuthorization = async (email) => {
     if (!email) return false;
-    
+
     try {
       const normalizedEmail = email.toLowerCase().trim();
-      
+
       // Check admins collection ONLY - this is the single source of truth
       try {
         const admin = await adminServices.getAdminByEmail(normalizedEmail);
@@ -180,19 +183,19 @@ export function AdminAuthProvider({ children }) {
       const provider = new GoogleAuthProvider();
       provider.addScope('email');
       provider.addScope('profile');
-      
+
       const result = await signInWithPopup(auth, provider);
-      
+
       // Force token refresh to ensure email is in the token for Firestore rules
       try {
         await result.user.getIdTokenResult(true); // Force refresh
       } catch (tokenError) {
         // Silently handle token refresh error
       }
-      
+
       // Check authorization after successful authentication
       const authorized = await checkAdminAuthorization(result.user.email);
-      
+
       if (!authorized) {
         await firebaseSignOut(auth);
         toast({

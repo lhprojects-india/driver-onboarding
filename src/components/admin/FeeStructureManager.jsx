@@ -59,7 +59,7 @@ const cleanEarningsString = (earnings) => {
 
 export default function FeeStructureManager() {
   const { toast } = useToast();
-  const { adminRole } = useAdminAuth();
+  const { adminRole, currentUser } = useAdminAuth();
   const [feeStructures, setFeeStructures] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -88,13 +88,25 @@ export default function FeeStructureManager() {
 
   useEffect(() => {
     loadFeeStructures();
-  }, []);
+  }, [currentUser]);
 
   const loadFeeStructures = async () => {
     setIsLoading(true);
     try {
       const structures = await adminServices.getAllFeeStructures();
-      setFeeStructures(structures);
+
+      // Filter by accessible cities if restricted
+      if (currentUser?.accessibleCities?.length > 0 && adminRole !== 'super_admin') {
+        const filtered = {};
+        Object.keys(structures).forEach(city => {
+          if (currentUser.accessibleCities.includes(city)) {
+            filtered[city] = structures[city];
+          }
+        });
+        setFeeStructures(filtered);
+      } else {
+        setFeeStructures(structures);
+      }
     } catch (error) {
       console.error('Error loading fee structures:', error);
       toast({
@@ -134,7 +146,7 @@ export default function FeeStructureManager() {
 
   const handleEdit = (cityId, structure) => {
     const feeType = structure.feeType || 'general';
-    
+
     if (feeType === 'vehicle-specific') {
       // Handle vehicle-specific structure
       setFormData({
@@ -320,7 +332,7 @@ export default function FeeStructureManager() {
   const updateBlock = (index, field, value) => {
     setFormData(prev => ({
       ...prev,
-      blocks: prev.blocks.map((block, i) => 
+      blocks: prev.blocks.map((block, i) =>
         i === index ? { ...block, [field]: value } : block
       )
     }));
@@ -358,7 +370,7 @@ export default function FeeStructureManager() {
       ...prev,
       vehicleBlocks: {
         ...prev.vehicleBlocks,
-        [vehicleType]: prev.vehicleBlocks[vehicleType].map((block, i) => 
+        [vehicleType]: prev.vehicleBlocks[vehicleType].map((block, i) =>
           i === index ? { ...block, [field]: value } : block
         )
       }
@@ -368,7 +380,7 @@ export default function FeeStructureManager() {
   // Calculate average hourly earnings from blocks
   const calculateAverageHourlyEarnings = (blocks, currencyCode) => {
     if (!blocks || blocks.length === 0) return '';
-    
+
     const currencySymbol = getCurrencySymbol(currencyCode);
     const hourlyRates = blocks.map(block => {
       if (!block.shiftLength || block.shiftLength === 0) return null;
@@ -390,7 +402,7 @@ export default function FeeStructureManager() {
   // Calculate average per task earnings from blocks
   const calculateAveragePerTaskEarnings = (blocks, currencyCode) => {
     if (!blocks || blocks.length === 0) return '';
-    
+
     const currencySymbol = getCurrencySymbol(currencyCode);
     const taskRates = blocks.map(block => {
       if (!block.includedTasks || block.includedTasks === 0) return null;
@@ -418,11 +430,11 @@ export default function FeeStructureManager() {
     if (formData.blocks && formData.blocks.length > 0) {
       const calculatedHourly = calculateAverageHourlyEarnings(formData.blocks, formData.currency);
       const calculatedPerTask = calculateAveragePerTaskEarnings(formData.blocks, formData.currency);
-      
+
       // Only update if values have changed to avoid unnecessary re-renders
       setFormData(prev => {
-        if (prev.averageHourlyEarnings === calculatedHourly && 
-            prev.averagePerTaskEarnings === calculatedPerTask) {
+        if (prev.averageHourlyEarnings === calculatedHourly &&
+          prev.averagePerTaskEarnings === calculatedPerTask) {
           return prev; // No change needed
         }
         return {
@@ -461,408 +473,408 @@ export default function FeeStructureManager() {
               <h2 className="text-xl font-semibold text-gray-900">Fee Structures</h2>
               <p className="text-sm text-gray-600 mt-1">Manage fee structures for different cities</p>
             </div>
-            {(adminRole === 'super_admin' || adminRole === 'app_admin' || adminRole === 'admin_fleet') && (
+            {(adminRole === 'super_admin' || adminRole === 'app_admin') && (
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button onClick={handleCreateNew} className="bg-blue-600 hover:bg-blue-700">
+                  <Button onClick={handleCreateNew} className="bg-brand-blue hover:bg-brand-shadeBlue">
                     <Plus className="h-4 w-4 mr-2" />
                     Add Fee Structure
                   </Button>
                 </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto z-[200]">
-            <DialogHeader>
-              <DialogTitle>
-                {editingCity ? 'Edit Fee Structure' : 'Create New Fee Structure'}
-              </DialogTitle>
-              <DialogDescription>
-                {editingCity ? 'Update the fee structure for this city' : 'Create a new fee structure for a city'}
-              </DialogDescription>
-            </DialogHeader>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto z-[200]">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingCity ? 'Edit Fee Structure' : 'Create New Fee Structure'}
+                    </DialogTitle>
+                    <DialogDescription>
+                      {editingCity ? 'Update the fee structure for this city' : 'Create a new fee structure for a city'}
+                    </DialogDescription>
+                  </DialogHeader>
 
-            <div className="space-y-6">
-              {/* Basic Information */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="city">City Name</Label>
-                  <Input
-                    id="city"
-                    value={formData.city}
-                    onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
-                    placeholder="e.g., Birmingham"
-                  />
-                </div>
-                <div className="relative z-[150]">
-                  <Label htmlFor="currency">Currency</Label>
-                  <Select 
-                    value={formData.currency} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select currency" />
-                    </SelectTrigger>
-                    <SelectContent className="z-[250] bg-white">
-                      <SelectItem value="GBP">£ (GBP)</SelectItem>
-                      <SelectItem value="USD">$ (USD)</SelectItem>
-                      <SelectItem value="EUR">€ (EUR)</SelectItem>
-                      <SelectItem value="SGD">$ (SGD)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+                  <div className="space-y-6">
+                    {/* Basic Information */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="city">City Name</Label>
+                        <Input
+                          id="city"
+                          value={formData.city}
+                          onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
+                          placeholder="e.g., Birmingham"
+                        />
+                      </div>
+                      <div className="relative z-[150]">
+                        <Label htmlFor="currency">Currency</Label>
+                        <Select
+                          value={formData.currency}
+                          onValueChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select currency" />
+                          </SelectTrigger>
+                          <SelectContent className="z-[250] bg-white">
+                            <SelectItem value="GBP">£ (GBP)</SelectItem>
+                            <SelectItem value="USD">$ (USD)</SelectItem>
+                            <SelectItem value="EUR">€ (EUR)</SelectItem>
+                            <SelectItem value="SGD">$ (SGD)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
 
-              {/* Fee Type Selector */}
-              <div className="relative z-[150]">
-                <Label htmlFor="feeType">Fee Type</Label>
-                <Select 
-                  value={formData.feeType} 
-                  onValueChange={(value) => {
-                    setFormData(prev => ({
-                      ...prev,
-                      feeType: value,
-                      // Reset blocks when switching types
-                      blocks: value === 'general' ? (prev.blocks.length > 0 ? prev.blocks : [{
-                        shiftLength: 4,
-                        minimumFee: 50,
-                        includedTasks: 12,
-                        additionalTaskFee: 4.58,
-                        density: 'high'
-                      }]) : [],
-                      vehicleBlocks: value === 'vehicle-specific' ? (prev.vehicleBlocks.van.length > 0 || prev.vehicleBlocks.car.length > 0 ? prev.vehicleBlocks : {
-                        van: [],
-                        car: []
-                      }) : { van: [], car: [] }
-                    }));
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select fee type" />
-                  </SelectTrigger>
-                  <SelectContent className="z-[250] bg-white">
-                    <SelectItem value="general">General Fee</SelectItem>
-                    <SelectItem value="vehicle-specific">Vehicle-Specific Fee (Van & Car)</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-gray-500 mt-1">
-                  {formData.feeType === 'vehicle-specific' 
-                    ? 'Vehicle-specific fees require both van and car fee blocks to be set.'
-                    : 'General fee applies to all vehicle types.'}
-                </p>
-              </div>
+                    {/* Fee Type Selector */}
+                    <div className="relative z-[150]">
+                      <Label htmlFor="feeType">Fee Type</Label>
+                      <Select
+                        value={formData.feeType}
+                        onValueChange={(value) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            feeType: value,
+                            // Reset blocks when switching types
+                            blocks: value === 'general' ? (prev.blocks.length > 0 ? prev.blocks : [{
+                              shiftLength: 4,
+                              minimumFee: 50,
+                              includedTasks: 12,
+                              additionalTaskFee: 4.58,
+                              density: 'high'
+                            }]) : [],
+                            vehicleBlocks: value === 'vehicle-specific' ? (prev.vehicleBlocks.van.length > 0 || prev.vehicleBlocks.car.length > 0 ? prev.vehicleBlocks : {
+                              van: [],
+                              car: []
+                            }) : { van: [], car: [] }
+                          }));
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select fee type" />
+                        </SelectTrigger>
+                        <SelectContent className="z-[250] bg-white">
+                          <SelectItem value="general">General Fee</SelectItem>
+                          <SelectItem value="vehicle-specific">Vehicle-Specific Fee (Van & Car)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {formData.feeType === 'vehicle-specific'
+                          ? 'Vehicle-specific fees require both van and car fee blocks to be set.'
+                          : 'General fee applies to all vehicle types.'}
+                      </p>
+                    </div>
 
-              {/* General Fee Blocks */}
-              {formData.feeType === 'general' && (
-                <div>
-                  <div className="flex justify-between items-center mb-4">
-                    <Label>Fee Blocks</Label>
-                    <Button variant="outline" size="sm" onClick={addBlock}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Block
-                    </Button>
-                  </div>
+                    {/* General Fee Blocks */}
+                    {formData.feeType === 'general' && (
+                      <div>
+                        <div className="flex justify-between items-center mb-4">
+                          <Label>Fee Blocks</Label>
+                          <Button variant="outline" size="sm" onClick={addBlock}>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Block
+                          </Button>
+                        </div>
 
-                <div className="space-y-4">
-                  {formData.blocks.map((block, index) => (
-                    <Card key={index}>
-                      <CardHeader className="pb-3">
-                        <div className="flex justify-between items-center">
-                          <CardTitle className="text-lg">Block {index + 1}</CardTitle>
-                          {formData.blocks.length > 1 && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => removeBlock(index)}
-                            >
-                              <X className="h-4 w-4" />
+                        <div className="space-y-4">
+                          {formData.blocks.map((block, index) => (
+                            <Card key={index}>
+                              <CardHeader className="pb-3">
+                                <div className="flex justify-between items-center">
+                                  <CardTitle className="text-lg">Block {index + 1}</CardTitle>
+                                  {formData.blocks.length > 1 && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => removeBlock(index)}
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </CardHeader>
+                              <CardContent>
+                                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                  <div className="relative z-[150]">
+                                    <Label>Density</Label>
+                                    <Select
+                                      value={block.density}
+                                      onValueChange={(value) => updateBlock(index, 'density', value)}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent className="z-[250] bg-white">
+                                        <SelectItem value="high">High</SelectItem>
+                                        <SelectItem value="medium">Medium</SelectItem>
+                                        <SelectItem value="low">Low</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div>
+                                    <Label>Shift Length (hours)</Label>
+                                    <Input
+                                      type="number"
+                                      value={block.shiftLength}
+                                      onChange={(e) => updateBlock(index, 'shiftLength', parseInt(e.target.value))}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label>Minimum Fee</Label>
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      value={block.minimumFee}
+                                      onChange={(e) => updateBlock(index, 'minimumFee', parseFloat(e.target.value))}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label>Included Tasks</Label>
+                                    <Input
+                                      type="number"
+                                      value={block.includedTasks}
+                                      onChange={(e) => updateBlock(index, 'includedTasks', parseInt(e.target.value))}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label>Additional Task Fee</Label>
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      value={block.additionalTaskFee}
+                                      onChange={(e) => updateBlock(index, 'additionalTaskFee', parseFloat(e.target.value))}
+                                    />
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Vehicle-Specific Fee Blocks */}
+                    {formData.feeType === 'vehicle-specific' && (
+                      <div className="space-y-6">
+                        {/* Van Fees */}
+                        <div>
+                          <div className="flex justify-between items-center mb-4">
+                            <Label className="text-lg font-semibold">Van Fees</Label>
+                            <Button variant="outline" size="sm" onClick={() => addVehicleBlock('van')}>
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add Van Block
                             </Button>
-                          )}
+                          </div>
+                          <div className="space-y-4">
+                            {formData.vehicleBlocks.van.map((block, index) => (
+                              <Card key={index}>
+                                <CardHeader className="pb-3">
+                                  <div className="flex justify-between items-center">
+                                    <CardTitle className="text-lg">Van Block {index + 1}</CardTitle>
+                                    {formData.vehicleBlocks.van.length > 1 && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => removeVehicleBlock('van', index)}
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                </CardHeader>
+                                <CardContent>
+                                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                    <div className="relative z-[150]">
+                                      <Label>Density</Label>
+                                      <Select
+                                        value={block.density}
+                                        onValueChange={(value) => updateVehicleBlock('van', index, 'density', value)}
+                                      >
+                                        <SelectTrigger>
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="z-[250] bg-white">
+                                          <SelectItem value="high">High</SelectItem>
+                                          <SelectItem value="medium">Medium</SelectItem>
+                                          <SelectItem value="low">Low</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <div>
+                                      <Label>Shift Length (hours)</Label>
+                                      <Input
+                                        type="number"
+                                        value={block.shiftLength}
+                                        onChange={(e) => updateVehicleBlock('van', index, 'shiftLength', parseInt(e.target.value))}
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label>Minimum Fee</Label>
+                                      <Input
+                                        type="number"
+                                        step="0.01"
+                                        value={block.minimumFee}
+                                        onChange={(e) => updateVehicleBlock('van', index, 'minimumFee', parseFloat(e.target.value))}
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label>Included Tasks</Label>
+                                      <Input
+                                        type="number"
+                                        value={block.includedTasks}
+                                        onChange={(e) => updateVehicleBlock('van', index, 'includedTasks', parseInt(e.target.value))}
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label>Additional Task Fee</Label>
+                                      <Input
+                                        type="number"
+                                        step="0.01"
+                                        value={block.additionalTaskFee}
+                                        onChange={(e) => updateVehicleBlock('van', index, 'additionalTaskFee', parseFloat(e.target.value))}
+                                      />
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                            {formData.vehicleBlocks.van.length === 0 && (
+                              <p className="text-sm text-gray-500 text-center py-4">No van blocks added yet. Click "Add Van Block" to get started.</p>
+                            )}
+                          </div>
                         </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                          <div className="relative z-[150]">
-                            <Label>Density</Label>
-                            <Select 
-                              value={block.density} 
-                              onValueChange={(value) => updateBlock(index, 'density', value)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent className="z-[250] bg-white">
-                                <SelectItem value="high">High</SelectItem>
-                                <SelectItem value="medium">Medium</SelectItem>
-                                <SelectItem value="low">Low</SelectItem>
-                              </SelectContent>
-                            </Select>
+
+                        {/* Car Fees */}
+                        <div>
+                          <div className="flex justify-between items-center mb-4">
+                            <Label className="text-lg font-semibold">Car Fees</Label>
+                            <Button variant="outline" size="sm" onClick={() => addVehicleBlock('car')}>
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add Car Block
+                            </Button>
                           </div>
-                          <div>
-                            <Label>Shift Length (hours)</Label>
-                            <Input
-                              type="number"
-                              value={block.shiftLength}
-                              onChange={(e) => updateBlock(index, 'shiftLength', parseInt(e.target.value))}
-                            />
-                          </div>
-                          <div>
-                            <Label>Minimum Fee</Label>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              value={block.minimumFee}
-                              onChange={(e) => updateBlock(index, 'minimumFee', parseFloat(e.target.value))}
-                            />
-                          </div>
-                          <div>
-                            <Label>Included Tasks</Label>
-                            <Input
-                              type="number"
-                              value={block.includedTasks}
-                              onChange={(e) => updateBlock(index, 'includedTasks', parseInt(e.target.value))}
-                            />
-                          </div>
-                          <div>
-                            <Label>Additional Task Fee</Label>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              value={block.additionalTaskFee}
-                              onChange={(e) => updateBlock(index, 'additionalTaskFee', parseFloat(e.target.value))}
-                            />
+                          <div className="space-y-4">
+                            {formData.vehicleBlocks.car.map((block, index) => (
+                              <Card key={index}>
+                                <CardHeader className="pb-3">
+                                  <div className="flex justify-between items-center">
+                                    <CardTitle className="text-lg">Car Block {index + 1}</CardTitle>
+                                    {formData.vehicleBlocks.car.length > 1 && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => removeVehicleBlock('car', index)}
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                </CardHeader>
+                                <CardContent>
+                                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                    <div className="relative z-[150]">
+                                      <Label>Density</Label>
+                                      <Select
+                                        value={block.density}
+                                        onValueChange={(value) => updateVehicleBlock('car', index, 'density', value)}
+                                      >
+                                        <SelectTrigger>
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="z-[250] bg-white">
+                                          <SelectItem value="high">High</SelectItem>
+                                          <SelectItem value="medium">Medium</SelectItem>
+                                          <SelectItem value="low">Low</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <div>
+                                      <Label>Shift Length (hours)</Label>
+                                      <Input
+                                        type="number"
+                                        value={block.shiftLength}
+                                        onChange={(e) => updateVehicleBlock('car', index, 'shiftLength', parseInt(e.target.value))}
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label>Minimum Fee</Label>
+                                      <Input
+                                        type="number"
+                                        step="0.01"
+                                        value={block.minimumFee}
+                                        onChange={(e) => updateVehicleBlock('car', index, 'minimumFee', parseFloat(e.target.value))}
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label>Included Tasks</Label>
+                                      <Input
+                                        type="number"
+                                        value={block.includedTasks}
+                                        onChange={(e) => updateVehicleBlock('car', index, 'includedTasks', parseInt(e.target.value))}
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label>Additional Task Fee</Label>
+                                      <Input
+                                        type="number"
+                                        step="0.01"
+                                        value={block.additionalTaskFee}
+                                        onChange={(e) => updateVehicleBlock('car', index, 'additionalTaskFee', parseFloat(e.target.value))}
+                                      />
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                            {formData.vehicleBlocks.car.length === 0 && (
+                              <p className="text-sm text-gray-500 text-center py-4">No car blocks added yet. Click "Add Car Block" to get started.</p>
+                            )}
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-              )}
+                      </div>
+                    )}
 
-              {/* Vehicle-Specific Fee Blocks */}
-              {formData.feeType === 'vehicle-specific' && (
-                <div className="space-y-6">
-                  {/* Van Fees */}
-                  <div>
-                    <div className="flex justify-between items-center mb-4">
-                      <Label className="text-lg font-semibold">Van Fees</Label>
-                      <Button variant="outline" size="sm" onClick={() => addVehicleBlock('van')}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Van Block
-                      </Button>
-                    </div>
-                    <div className="space-y-4">
-                      {formData.vehicleBlocks.van.map((block, index) => (
-                        <Card key={index}>
-                          <CardHeader className="pb-3">
-                            <div className="flex justify-between items-center">
-                              <CardTitle className="text-lg">Van Block {index + 1}</CardTitle>
-                              {formData.vehicleBlocks.van.length > 1 && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => removeVehicleBlock('van', index)}
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </div>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                              <div className="relative z-[150]">
-                                <Label>Density</Label>
-                                <Select 
-                                  value={block.density} 
-                                  onValueChange={(value) => updateVehicleBlock('van', index, 'density', value)}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent className="z-[250] bg-white">
-                                    <SelectItem value="high">High</SelectItem>
-                                    <SelectItem value="medium">Medium</SelectItem>
-                                    <SelectItem value="low">Low</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div>
-                                <Label>Shift Length (hours)</Label>
-                                <Input
-                                  type="number"
-                                  value={block.shiftLength}
-                                  onChange={(e) => updateVehicleBlock('van', index, 'shiftLength', parseInt(e.target.value))}
-                                />
-                              </div>
-                              <div>
-                                <Label>Minimum Fee</Label>
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  value={block.minimumFee}
-                                  onChange={(e) => updateVehicleBlock('van', index, 'minimumFee', parseFloat(e.target.value))}
-                                />
-                              </div>
-                              <div>
-                                <Label>Included Tasks</Label>
-                                <Input
-                                  type="number"
-                                  value={block.includedTasks}
-                                  onChange={(e) => updateVehicleBlock('van', index, 'includedTasks', parseInt(e.target.value))}
-                                />
-                              </div>
-                              <div>
-                                <Label>Additional Task Fee</Label>
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  value={block.additionalTaskFee}
-                                  onChange={(e) => updateVehicleBlock('van', index, 'additionalTaskFee', parseFloat(e.target.value))}
-                                />
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                      {formData.vehicleBlocks.van.length === 0 && (
-                        <p className="text-sm text-gray-500 text-center py-4">No van blocks added yet. Click "Add Van Block" to get started.</p>
-                      )}
-                    </div>
+                    {/* Calculated Earnings Information */}
+                    {formData.feeType === 'general' && (
+                      <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                        <div>
+                          <Label htmlFor="hourlyEarnings">Average Hourly Earnings</Label>
+                          <Input
+                            id="hourlyEarnings"
+                            value={formData.averageHourlyEarnings}
+                            readOnly
+                            className="bg-gray-50 cursor-not-allowed"
+                            placeholder="Calculated from blocks..."
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Automatically calculated from block details</p>
+                        </div>
+                        <div>
+                          <Label htmlFor="taskEarnings">Average Per Task Earnings</Label>
+                          <Input
+                            id="taskEarnings"
+                            value={formData.averagePerTaskEarnings}
+                            readOnly
+                            className="bg-gray-50 cursor-not-allowed"
+                            placeholder="Calculated from blocks..."
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Automatically calculated from block details</p>
+                        </div>
+                      </div>
+                    )}
+                    {formData.feeType === 'vehicle-specific' && (
+                      <div className="pt-4 border-t">
+                        <p className="text-sm text-gray-600 mb-2">Earnings will be calculated automatically for each vehicle type when you save.</p>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Car Fees */}
-                  <div>
-                    <div className="flex justify-between items-center mb-4">
-                      <Label className="text-lg font-semibold">Car Fees</Label>
-                      <Button variant="outline" size="sm" onClick={() => addVehicleBlock('car')}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Car Block
-                      </Button>
-                    </div>
-                    <div className="space-y-4">
-                      {formData.vehicleBlocks.car.map((block, index) => (
-                        <Card key={index}>
-                          <CardHeader className="pb-3">
-                            <div className="flex justify-between items-center">
-                              <CardTitle className="text-lg">Car Block {index + 1}</CardTitle>
-                              {formData.vehicleBlocks.car.length > 1 && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => removeVehicleBlock('car', index)}
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </div>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                              <div className="relative z-[150]">
-                                <Label>Density</Label>
-                                <Select 
-                                  value={block.density} 
-                                  onValueChange={(value) => updateVehicleBlock('car', index, 'density', value)}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent className="z-[250] bg-white">
-                                    <SelectItem value="high">High</SelectItem>
-                                    <SelectItem value="medium">Medium</SelectItem>
-                                    <SelectItem value="low">Low</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div>
-                                <Label>Shift Length (hours)</Label>
-                                <Input
-                                  type="number"
-                                  value={block.shiftLength}
-                                  onChange={(e) => updateVehicleBlock('car', index, 'shiftLength', parseInt(e.target.value))}
-                                />
-                              </div>
-                              <div>
-                                <Label>Minimum Fee</Label>
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  value={block.minimumFee}
-                                  onChange={(e) => updateVehicleBlock('car', index, 'minimumFee', parseFloat(e.target.value))}
-                                />
-                              </div>
-                              <div>
-                                <Label>Included Tasks</Label>
-                                <Input
-                                  type="number"
-                                  value={block.includedTasks}
-                                  onChange={(e) => updateVehicleBlock('car', index, 'includedTasks', parseInt(e.target.value))}
-                                />
-                              </div>
-                              <div>
-                                <Label>Additional Task Fee</Label>
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  value={block.additionalTaskFee}
-                                  onChange={(e) => updateVehicleBlock('car', index, 'additionalTaskFee', parseFloat(e.target.value))}
-                                />
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                      {formData.vehicleBlocks.car.length === 0 && (
-                        <p className="text-sm text-gray-500 text-center py-4">No car blocks added yet. Click "Add Car Block" to get started.</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Calculated Earnings Information */}
-              {formData.feeType === 'general' && (
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                  <div>
-                    <Label htmlFor="hourlyEarnings">Average Hourly Earnings</Label>
-                    <Input
-                      id="hourlyEarnings"
-                      value={formData.averageHourlyEarnings}
-                      readOnly
-                      className="bg-gray-50 cursor-not-allowed"
-                      placeholder="Calculated from blocks..."
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Automatically calculated from block details</p>
-                  </div>
-                  <div>
-                    <Label htmlFor="taskEarnings">Average Per Task Earnings</Label>
-                    <Input
-                      id="taskEarnings"
-                      value={formData.averagePerTaskEarnings}
-                      readOnly
-                      className="bg-gray-50 cursor-not-allowed"
-                      placeholder="Calculated from blocks..."
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Automatically calculated from block details</p>
-                  </div>
-                </div>
-              )}
-              {formData.feeType === 'vehicle-specific' && (
-                <div className="pt-4 border-t">
-                  <p className="text-sm text-gray-600 mb-2">Earnings will be calculated automatically for each vehicle type when you save.</p>
-                </div>
-              )}
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">
-                <Save className="h-4 w-4 mr-2" />
-                {editingCity ? 'Update' : 'Create'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleSave} className="bg-brand-blue hover:bg-brand-shadeBlue">
+                      <Save className="h-4 w-4 mr-2" />
+                      {editingCity ? 'Update' : 'Create'}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             )}
           </div>
         </CardContent>
@@ -908,7 +920,7 @@ export default function FeeStructureManager() {
                     </span>
                   </CardDescription>
                 </div>
-                {(adminRole === 'super_admin' || adminRole === 'app_admin' || adminRole === 'admin_fleet') && (
+                {(adminRole === 'super_admin' || adminRole === 'app_admin') && (
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
@@ -920,30 +932,30 @@ export default function FeeStructureManager() {
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="sm" className="bg-red-600 hover:bg-red-700">
+                        <Button variant="destructive" size="sm" className="bg-brand-pink hover:bg-brand-shadePink text-white">
                           <Trash2 className="h-4 w-4 mr-1" />
                           Delete
                         </Button>
                       </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Fee Structure</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to delete the fee structure for {structure.city}? 
-                          This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => handleDelete(cityId, structure.city)}
-                          className="bg-red-600 hover:bg-red-700"
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Fee Structure</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete the fee structure for {structure.city}?
+                            This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDelete(cityId, structure.city)}
+                            className="bg-brand-pink hover:bg-brand-shadePink text-white"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 )}
               </div>
@@ -958,10 +970,9 @@ export default function FeeStructureManager() {
                       {structure.blocks?.van?.map((block, index) => (
                         <div key={index} className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
                           <h4 className="font-semibold mb-3 capitalize text-gray-900 flex items-center gap-2">
-                            <div className={`w-3 h-3 rounded-full ${
-                              block.density === 'high' ? 'bg-green-500' : 
+                            <div className={`w-3 h-3 rounded-full ${block.density === 'high' ? 'bg-green-500' :
                               block.density === 'medium' ? 'bg-yellow-500' : 'bg-orange-500'
-                            }`} />
+                              }`} />
                             {block.density} Density Block
                           </h4>
                           <div className="space-y-2 text-sm">
@@ -993,10 +1004,9 @@ export default function FeeStructureManager() {
                       {structure.blocks?.car?.map((block, index) => (
                         <div key={index} className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
                           <h4 className="font-semibold mb-3 capitalize text-gray-900 flex items-center gap-2">
-                            <div className={`w-3 h-3 rounded-full ${
-                              block.density === 'high' ? 'bg-green-500' : 
+                            <div className={`w-3 h-3 rounded-full ${block.density === 'high' ? 'bg-green-500' :
                               block.density === 'medium' ? 'bg-yellow-500' : 'bg-orange-500'
-                            }`} />
+                              }`} />
                             {block.density} Density Block
                           </h4>
                           <div className="space-y-2 text-sm">
@@ -1027,10 +1037,9 @@ export default function FeeStructureManager() {
                   {structure.blocks?.map((block, index) => (
                     <div key={index} className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
                       <h4 className="font-semibold mb-3 capitalize text-gray-900 flex items-center gap-2">
-                        <div className={`w-3 h-3 rounded-full ${
-                          block.density === 'high' ? 'bg-green-500' : 
+                        <div className={`w-3 h-3 rounded-full ${block.density === 'high' ? 'bg-green-500' :
                           block.density === 'medium' ? 'bg-yellow-500' : 'bg-orange-500'
-                        }`} />
+                          }`} />
                         {block.density} Density Block
                       </h4>
                       <div className="space-y-2 text-sm">

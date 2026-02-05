@@ -12,7 +12,7 @@ import { Plus, Edit, Trash2, Save, X, FileText } from "lucide-react";
 
 export default function FacilityManager() {
   const { toast } = useToast();
-  const { adminRole } = useAdminAuth();
+  const { adminRole, currentUser } = useAdminAuth();
   const [facilities, setFacilities] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -25,13 +25,25 @@ export default function FacilityManager() {
 
   useEffect(() => {
     loadFacilities();
-  }, []);
+  }, [currentUser]);
 
   const loadFacilities = async () => {
     setIsLoading(true);
     try {
       const facilitiesData = await adminServices.getAllFacilities();
-      setFacilities(facilitiesData);
+
+      // Filter by accessible cities if restricted
+      if (currentUser?.accessibleCities?.length > 0 && adminRole !== 'super_admin') {
+        const filtered = {};
+        Object.keys(facilitiesData).forEach(city => {
+          if (currentUser.accessibleCities.includes(city)) {
+            filtered[city] = facilitiesData[city];
+          }
+        });
+        setFacilities(filtered);
+      } else {
+        setFacilities(facilitiesData);
+      }
     } catch (error) {
       console.error('Error loading facilities:', error);
       toast({
@@ -166,67 +178,67 @@ export default function FacilityManager() {
               <h2 className="text-xl font-semibold text-gray-900">Facility Locations</h2>
               <p className="text-sm text-gray-600 mt-1">Manage facility locations for different cities</p>
             </div>
-            {(adminRole === 'super_admin' || adminRole === 'app_admin' || adminRole === 'admin_fleet') && (
+            {(adminRole === 'super_admin' || adminRole === 'app_admin') && (
               <div className="flex gap-2">
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button onClick={handleCreateNew} className="bg-blue-600 hover:bg-blue-700">
-                      <Plus className="h-4 w-4 mr-2" />
+                    <Button onClick={handleCreateNew} className="bg-brand-blue hover:bg-brand-shadeBlue">
+                      <Save className="h-4 w-4 mr-2" />
                       Add Facility
                     </Button>
                   </DialogTrigger>
-                <DialogContent className="max-w-2xl z-[200]">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {editingFacility ? 'Edit Facility' : 'Create New Facility'}
-                    </DialogTitle>
-                    <DialogDescription>
-                      {editingFacility ? 'Update the facility information' : 'Add a new facility location'}
-                    </DialogDescription>
-                  </DialogHeader>
+                  <DialogContent className="max-w-2xl z-[200]">
+                    <DialogHeader>
+                      <DialogTitle>
+                        {editingFacility ? 'Edit Facility' : 'Create New Facility'}
+                      </DialogTitle>
+                      <DialogDescription>
+                        {editingFacility ? 'Update the facility information' : 'Add a new facility location'}
+                      </DialogDescription>
+                    </DialogHeader>
 
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="city">City Name</Label>
-                      <Input
-                        id="city"
-                        value={formData.city}
-                        onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
-                        placeholder="e.g., London"
-                      />
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="city">City Name</Label>
+                        <Input
+                          id="city"
+                          value={formData.city}
+                          onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
+                          placeholder="e.g., London"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="facility">Facility Code</Label>
+                        <Input
+                          id="facility"
+                          value={formData.facility}
+                          onChange={(e) => setFormData(prev => ({ ...prev, facility: e.target.value.toUpperCase() }))}
+                          placeholder="e.g., CRT"
+                          maxLength={10}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="address">Address</Label>
+                        <Input
+                          id="address"
+                          value={formData.address}
+                          onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                          placeholder="Full address of the facility"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <Label htmlFor="facility">Facility Code</Label>
-                      <Input
-                        id="facility"
-                        value={formData.facility}
-                        onChange={(e) => setFormData(prev => ({ ...prev, facility: e.target.value.toUpperCase() }))}
-                        placeholder="e.g., CRT"
-                        maxLength={10}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="address">Address</Label>
-                      <Input
-                        id="address"
-                        value={formData.address}
-                        onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                        placeholder="Full address of the facility"
-                      />
-                    </div>
-                  </div>
 
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">
-                      <Save className="h-4 w-4 mr-2" />
-                      {editingFacility ? 'Update' : 'Create'}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={handleSave} className="bg-brand-blue hover:bg-brand-shadeBlue">
+                        <Save className="h-4 w-4 mr-2" />
+                        {editingFacility ? 'Update' : 'Create'}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             )}
           </div>
@@ -261,7 +273,7 @@ export default function FacilityManager() {
                           </span>
                         </div>
                       </div>
-                      {(adminRole === 'super_admin' || adminRole === 'app_admin' || adminRole === 'admin_fleet') && (
+                      {(adminRole === 'super_admin' || adminRole === 'app_admin') && (
                         <div className="flex gap-2">
                           <Button
                             variant="outline"
@@ -273,30 +285,30 @@ export default function FacilityManager() {
                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="destructive" size="sm" className="bg-red-600 hover:bg-red-700">
+                              <Button variant="destructive" size="sm" className="bg-brand-pink hover:bg-brand-shadePink text-white">
                                 <Trash2 className="h-4 w-4 mr-1" />
                                 Delete
                               </Button>
                             </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Facility</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete facility {facility.facility || facility.Facility} in {city}? 
-                                This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDelete(facility.id || facility.Facility, facility.facility || facility.Facility)}
-                                className="bg-red-600 hover:bg-red-700"
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Facility</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete facility {facility.facility || facility.Facility} in {city}?
+                                  This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDelete(facility.id || facility.Facility, facility.facility || facility.Facility)}
+                                  className="bg-brand-pink hover:bg-brand-shadePink text-white"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       )}
                     </div>

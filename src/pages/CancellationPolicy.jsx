@@ -36,7 +36,7 @@ const CancellationPolicy = () => {
   const { canProceed, timeRemaining } = useMinimumReadTime(30);
 
   // Cities that should not show the 10% block release fee line
-  const citiesWithoutReleaseFee = ['Birmingham', 'Manchester', 'Dublin', 'Copenhagen', 'Amsterdam'];
+  const citiesWithoutReleaseFee = ['Birmingham', 'Manchester', 'Dublin', 'Copenhagen', 'Amsterdam', 'Edinburgh', 'Miami', 'Boston', 'Chicago'];
   const shouldHideReleaseFee = city && citiesWithoutReleaseFee.includes(city);
 
   // Fetch currency based on user's city
@@ -45,7 +45,7 @@ const CancellationPolicy = () => {
       try {
         // Get city from user data (could be from fountainData or city field)
         const userCity = currentUser?.fountainData?.city || currentUser?.city;
-        
+
         if (!userCity) {
           return;
         }
@@ -56,7 +56,7 @@ const CancellationPolicy = () => {
         const vehicleType = getVehicleTypeFromMOT(currentUser?.fountainData);
 
         const structures = await feeStructureServices.getFeeStructuresByCity(userCity, vehicleType);
-        
+
         if (structures?.currency) {
           setCurrency(structures.currency);
         }
@@ -99,11 +99,11 @@ const CancellationPolicy = () => {
 
       // Attempt server-side immutable acknowledgement
       const res = await acknowledgementServices.acknowledgeCancellationPolicy();
-      
+
       // Always update local state regardless of which method was used
       // If user came from summary, return to summary instead of continuing flow
       const shouldReturnToSummary = searchParams.get('from') === 'summary';
-      
+
       if (res.success) {
         // Cloud function succeeded, update local state
         await updateUserData(dataToSave);
@@ -164,7 +164,7 @@ const CancellationPolicy = () => {
         <h2 className="text-center text-3xl font-bold mb-6 animate-slide-down">
           Block Cancellation Policy
         </h2>
-        
+
         <div className="w-full max-w-2xl animate-fade-in">
           <div className="bg-gray-50 border border-gray-300 rounded-lg p-6 max-h-[500px] overflow-y-auto mb-6">
             <div className="text-left space-y-4 text-sm text-gray-900">
@@ -174,20 +174,24 @@ const CancellationPolicy = () => {
                   <p className="ml-4">
                     You must release your block at least 48 hours before the start time to avoid being charged the full block fee as a cancellation fee.
                   </p>
+                  <p className="pt-2 ml-4 text-sm italic">
+                    Note: Please be informed that you can avoid the cancellation fee by providing a suitable substitute.
+                  </p>
                 </div>
-                
+
                 <div>
                   <p className="font-semibold mb-2">Fees</p>
                   {!shouldHideReleaseFee && (
                     <p className="ml-4">
                       Release with 48+ hours' notice: 10% block release fee will be charged
+
                     </p>
                   )}
                   <p className="ml-4">
                     Release with less than 48 hours' notice: Full block fee charged as a cancellation fee
                   </p>
                 </div>
-                
+
                 <div>
                   <p className="font-semibold mb-2">Example</p>
                   <p className="ml-4 mb-1">
@@ -202,17 +206,20 @@ const CancellationPolicy = () => {
                     Released after 14th January, 5:00 PM → {currency}100 charged as cancellation fee
                   </p>
                 </div>
-                
+
                 <div>
                   <p className="font-semibold mb-2">Why This Matters</p>
                   <p className="ml-4">
-                    Releasing blocks early helps the team reassign the slot smoothly, ensuring customers receive consistent service — and it helps everyone avoid unnecessary delays.
+                    Releasing blocks early helps the team reassign the slot smoothly, ensuring customers receive consistent service, and it helps everyone avoid unnecessary delays.
+                  </p>
+                  <p className="pt-2 ml-4">
+                    Most partner drivers hold blocks in advance and release them close to the scheduled date, which limits availability for others. The 10% fee helps discourage last-minute releases and ensures fair access to blocks for all drivers.
                   </p>
                 </div>
               </div>
             </div>
           </div>
-          
+
           {searchParams.get('from') !== 'summary' && (
             <CheckboxWithLabel
               label="I understand the policy"
@@ -221,7 +228,7 @@ const CancellationPolicy = () => {
             />
           )}
         </div>
-        
+
         {searchParams.get('from') !== 'summary' && !canProceed && (
           <div className="w-full max-w-md text-center mt-4">
             <p className="text-sm text-muted-foreground">
@@ -229,7 +236,7 @@ const CancellationPolicy = () => {
             </p>
           </div>
         )}
-        
+
         <div className="w-full flex flex-col items-center space-y-4 mt-6">
           {searchParams.get('from') === 'summary' ? (
             <UIButton

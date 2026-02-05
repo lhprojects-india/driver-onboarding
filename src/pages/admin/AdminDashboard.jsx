@@ -15,6 +15,12 @@ import { Textarea } from "../../components/ui/textarea";
 import { Input } from "../../components/ui/input";
 import { useToast } from "../../hooks/use-toast";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../../components/ui/dropdown-menu";
+import {
   Users,
   FileText,
   Settings,
@@ -32,7 +38,8 @@ import {
   MapPin,
   AlertTriangle,
   UserCheck,
-  PauseCircle
+  PauseCircle,
+  MoreHorizontal
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { getCurrentStage } from "../../lib/progress-tracking";
@@ -52,6 +59,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import { Skeleton } from "../../components/ui/skeleton";
 
 const DAYS_ORDER = ['Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays', 'Sundays'];
 
@@ -63,6 +71,8 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [selectedReport, setSelectedReport] = useState(null);
+  const [applicationToDelete, setApplicationToDelete] = useState(null);
+  const [applicationToReset, setApplicationToReset] = useState(null);
   const [adminNotes, setAdminNotes] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -73,7 +83,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     // Add admin-page class to body to enable text selection
     document.body.classList.add('admin-page');
-    
+
     // Only load data if user is authenticated and authorized
     if (currentUser && isAuthorized) {
       loadData();
@@ -89,16 +99,33 @@ export default function AdminDashboard() {
     setIsLoading(true);
     try {
       // Force token refresh to ensure Firestore rules can read the email
-      const currentUser = auth.currentUser;
-      if (currentUser) {
-        await currentUser.getIdToken(true); // Force refresh
+      const user = auth.currentUser;
+      if (user) {
+        await user.getIdToken(true); // Force refresh
       }
-      
-      const [applicationsData, statsData] = await Promise.all([
+
+      let [applicationsData, statsData] = await Promise.all([
         adminServices.getAllApplications(),
         adminServices.getApplicationStats()
       ]);
-      
+
+      // Filter by accessible cities if restricted
+      if (currentUser?.accessibleCities?.length > 0 && adminRole !== 'super_admin') {
+        applicationsData = applicationsData.filter(app => currentUser.accessibleCities.includes(app.city));
+
+        // Recalculate stats from filtered applications
+        statsData = {
+          total: applicationsData.length,
+          pending: applicationsData.filter(app => !app.status || app.status === 'pending').length,
+          onHold: applicationsData.filter(app => app.status === 'on_hold').length,
+          approved: applicationsData.filter(app => app.status === 'approved').length,
+          hired: applicationsData.filter(app => app.status === 'hired').length,
+          rejected: applicationsData.filter(app => app.status === 'rejected').length,
+          completed: applicationsData.filter(app => app.onboardingStatus === 'completed').length,
+          inProgress: applicationsData.filter(app => app.onboardingStatus === 'started').length,
+        };
+      }
+
       setApplications(applicationsData);
       setStats(statsData);
     } catch (error) {
@@ -277,15 +304,15 @@ export default function AdminDashboard() {
   })();
 
   const STATUS_COLORS = {
-    Pending: "#fbbf24",
+    Pending: "#ffcd6d", // Brand-yellow
     "On Hold": "#f97316",
-    Approved: "#0ea5e9",
-    Hired: "#22c55e",
-    Rejected: "#ef4444",
+    Approved: "#04B4A8", // Brand-shadeTeal
+    Hired: "#202B93", // Brand-shadeBlue
+    Rejected: "#ED738C", // Brand-shadePink
     Withdrawn: "#6b7280",
   };
 
-  const PIE_COLORS = ["#0ea5e9", "#22c55e", "#f97316", "#6366f1", "#ec4899"];
+  const PIE_COLORS = ["#0890F1", "#2FCCC0", "#FFD06D", "#ED738C", "#202B93"];
 
   // Count active filters
   const activeFiltersCount = [
@@ -299,26 +326,26 @@ export default function AdminDashboard() {
   // Filter applications based on search and filters
   const filteredApplications = applications.filter((app) => {
     // Search filter
-    const matchesSearch = searchQuery === "" || 
+    const matchesSearch = searchQuery === "" ||
       app.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       app.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       app.city?.toLowerCase().includes(searchQuery.toLowerCase());
 
     // Status filter
-    const matchesStatus = statusFilter === "all" || 
+    const matchesStatus = statusFilter === "all" ||
       (statusFilter === "pending" && (!app.status || app.status === "pending")) ||
       app.status === statusFilter;
 
     // Onboarding filter
-    const matchesOnboarding = onboardingFilter === "all" || 
+    const matchesOnboarding = onboardingFilter === "all" ||
       app.onboardingStatus === onboardingFilter;
 
     // Stage filter
-    const matchesStage = stageFilter === "all" || 
+    const matchesStage = stageFilter === "all" ||
       getCurrentStage(app) === stageFilter;
 
     // City filter
-    const matchesCity = cityFilter === "all" || 
+    const matchesCity = cityFilter === "all" ||
       app.city === cityFilter;
 
     return matchesSearch && matchesStatus && matchesOnboarding && matchesStage && matchesCity;
@@ -326,32 +353,32 @@ export default function AdminDashboard() {
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      pending: { variant: "secondary", icon: Clock, label: "Pending" },
-      approved: { variant: "default", icon: CheckCircle, label: "Approved" },
-      rejected: { variant: "destructive", icon: XCircle, label: "Rejected" },
+      pending: { variant: "outline", icon: Clock, className: "bg-brand-lightYellow text-gray-800 border-brand-yellow", label: "Pending" },
+      approved: { variant: "default", icon: CheckCircle, className: "bg-brand-teal hover:bg-brand-shadeTeal text-white", label: "Approved" },
+      rejected: { variant: "destructive", icon: XCircle, className: "bg-brand-pink hover:bg-brand-shadePink text-white", label: "Rejected" },
       hired: {
         variant: "default",
         icon: UserCheck,
-        className: "bg-green-600 hover:bg-green-700",
+        className: "bg-brand-blue hover:bg-brand-shadeBlue text-white",
         label: "Hired",
       },
       on_hold: {
         variant: "outline",
         icon: PauseCircle,
-        className: "border-amber-400 text-amber-700 bg-amber-50",
+        className: "border-orange-200 text-orange-700 bg-orange-50",
         label: "On Hold",
       },
     };
-    
+
     const config = statusConfig[status] || statusConfig.pending;
     const Icon = config.icon;
-    
+
     return (
       <Badge
         variant={config.variant}
-        className={`flex items-center gap-1 ${config.className || ""}`}
+        className={`flex items-center gap-1 rounded-md px-2.5 py-0.5 ${config.className || ""}`}
       >
-        <Icon className="h-3 w-3" />
+        <Icon className="h-3.5 w-3.5" />
         {config.label || status || "pending"}
       </Badge>
     );
@@ -362,9 +389,9 @@ export default function AdminDashboard() {
       started: { variant: "secondary", label: "In Progress" },
       completed: { variant: "default", label: "Completed" },
     };
-    
+
     const config = statusConfig[status] || statusConfig.started;
-    
+
     return (
       <Badge variant={config.variant}>
         {config.label}
@@ -374,126 +401,265 @@ export default function AdminDashboard() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p>Loading admin data...</p>
+      <div className="min-h-screen bg-gray-50/50">
+        {/* Header Skeleton */}
+        <header className="bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-100 sticky top-0 z-30 transition-all duration-300">
+          <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="flex items-center gap-4">
+                <Skeleton className="w-12 h-12 rounded-full" />
+                <div>
+                  <Skeleton className="h-7 w-64 mb-1" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+              </div>
+              <div className="flex items-center gap-3 w-full sm:w-auto bg-gray-50 p-1.5 rounded-full border border-gray-100">
+                <div className="hidden sm:flex items-center gap-2 px-3">
+                  <Skeleton className="h-2 w-2 rounded-full" />
+                  <Skeleton className="h-4 w-40" />
+                </div>
+                <Skeleton className="h-8 w-8 rounded-full" />
+                <Skeleton className="h-8 w-8 rounded-full" />
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 py-8">
+          {/* Stats Cards Skeleton */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="relative overflow-hidden border-0 shadow-sm transition-all duration-300 h-32">
+                <div className="absolute top-0 left-0 w-1 h-full bg-gray-200"></div>
+                <CardHeader className="pb-2 relative z-10">
+                  <Skeleton className="h-4 w-32" />
+                </CardHeader>
+                <CardContent className="relative z-10 mt-2">
+                  <Skeleton className="h-9 w-16" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Main Content Skeleton */}
+          <div className="space-y-6">
+            <div className="bg-white p-1 rounded-xl shadow-sm border border-gray-100 inline-flex gap-1">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-9 w-32 rounded-lg" />
+              ))}
+            </div>
+
+            <Card className="bg-white border-0 shadow-sm border border-gray-100 overflow-hidden">
+              <div className="bg-white px-6 py-4 border-b border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-5 w-5 rounded" />
+                    <div>
+                      <Skeleton className="h-6 w-48 mb-1" />
+                      <Skeleton className="h-4 w-64" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <CardContent className="p-6 space-y-6 bg-white">
+                <Skeleton className="h-12 w-full rounded-lg" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="space-y-2">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-10 w-full rounded-md" />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm border border-gray-100">
+              <CardHeader className="bg-white border-b border-gray-100">
+                <div className="flex justify-between items-center">
+                  <Skeleton className="h-6 w-48" />
+                  <Skeleton className="h-9 w-32 rounded-md" />
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="p-4 space-y-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex items-center space-x-4 p-2">
+                      <Skeleton className="h-10 w-10 rounded-full" />
+                      <div className="space-y-2 flex-1">
+                        <Skeleton className="h-4 w-1/3" />
+                        <Skeleton className="h-3 w-1/4" />
+                      </div>
+                      <Skeleton className="h-8 w-24 rounded-full" />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50/50">
       {/* Header */}
-      <header className="bg-white shadow-md border-b sticky top-0 z-30">
+      <header className="bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-100 sticky top-0 z-30 transition-all duration-300">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 flex items-center justify-center shrink-0">
-                <svg
-                  width="40"
-                  height="40"
-                  viewBox="270 0 170 160"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-full h-full"
-                >
-                  <path
-                    d="M280.839 14.6317C274.557 19.0512 270.817 26.2593 270.817 33.9496V83.0697C270.817 93.8463 276.229 103.9 285.217 109.821L342.641 147.655C350.499 152.832 360.678 152.832 368.536 147.655L425.96 109.821C434.948 103.9 440.36 93.8463 440.36 83.0698V33.9496C440.36 26.2594 436.62 19.0512 430.338 14.6317L415.635 4.28764C406.826 -1.90906 394.946 -1.33884 386.769 5.67309L370.912 19.272C362.091 26.836 349.086 26.836 340.265 19.272L324.408 5.67308C316.231 -1.33884 304.351 -1.90906 295.542 4.28764L280.839 14.6317Z"
-                    fill="#FFD06D"
-                  />
-                </svg>
+              <div className="relative group">
+                <div className="w-12 h-12 flex items-center justify-center relative bg-white rounded-full p-1 shadow-sm">
+                  <svg
+                    width="40"
+                    height="40"
+                    viewBox="270 0 170 160"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-full h-full"
+                  >
+                    <path
+                      d="M280.839 14.6317C274.557 19.0512 270.817 26.2593 270.817 33.9496V83.0697C270.817 93.8463 276.229 103.9 285.217 109.821L342.641 147.655C350.499 152.832 360.678 152.832 368.536 147.655L425.96 109.821C434.948 103.9 440.36 93.8463 440.36 83.0698V33.9496C440.36 26.2594 436.62 19.0512 430.338 14.6317L415.635 4.28764C406.826 -1.90906 394.946 -1.33884 386.769 5.67309L370.912 19.272C362.091 26.836 349.086 26.836 340.265 19.272L324.408 5.67308C316.231 -1.33884 304.351 -1.90906 295.542 4.28764L280.839 14.6317Z"
+                      fill="#FFD06D"
+                    />
+                  </svg>
+                </div>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Laundryheap Driver Onboarding</h1>
-                <p className="text-sm text-gray-600 font-medium">Admin Dashboard</p>
+                <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600">
+                  Driver Onboarding
+                </h1>
+                <p className="text-sm text-gray-500 font-medium tracking-wide">Admin Dashboard</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-              <span className="text-xs sm:text-sm text-gray-600 truncate max-w-[200px] sm:max-w-none">{currentUser?.email}</span>
-              <Button variant="outline" size="sm" onClick={loadData} className="shrink-0">
-                <RefreshCw className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Refresh</span>
+
+            <div className="flex items-center gap-3 w-full sm:w-auto bg-gray-50 p-1.5 rounded-full border border-gray-100">
+              <div className="hidden sm:flex items-center gap-2 px-3">
+                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+                <span className="text-sm font-medium text-gray-600 truncate max-w-[150px]">{currentUser?.email}</span>
+              </div>
+              <Button variant="ghost" size="sm" onClick={loadData} className="shrink-0 rounded-full h-8 w-8 p-0 hover:bg-white hover:shadow-sm">
+                <RefreshCw className="h-4 w-4 text-gray-600" />
+                <span className="sr-only">Refresh</span>
               </Button>
-              <Button variant="destructive" size="sm" onClick={signOut} className="shrink-0">
-                <LogOut className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Sign out</span>
+              <Button variant="ghost" size="sm" onClick={signOut} className="shrink-0 rounded-full h-8 w-8 p-0 hover:bg-red-50 text-gray-500 hover:text-red-500 hover:shadow-sm">
+                <LogOut className="h-4 w-4" />
+                <span className="sr-only">Sign out</span>
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="w-full px-4 sm:px-6 py-4">
+      <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
-          <Card className="border-l-4 border-l-brand-blue shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-gray-700">Total Applications</CardTitle>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
+          <Card className="relative overflow-hidden border-0 shadow-sm hover:shadow-md transition-all duration-300 group">
+            <div className="absolute top-0 left-0 w-1 h-full bg-brand-blue"></div>
+            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-brand-lightBlue/30 group-hover:bg-brand-lightBlue/50 transition-colors"></div>
+            <CardHeader className="pb-2 relative z-10">
+              <CardTitle className="text-sm font-medium text-gray-600">Total Applications</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-brand-blue">{stats.total || 0}</div>
-            </CardContent>
-          </Card>
-          
-          <Card className="border-l-4 border-l-brand-yellow shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-gray-700">Pending Review</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-brand-shadeYellow">{stats.pending || 0}</div>
-            </CardContent>
-          </Card>
-          
-          <Card className="border-l-4 border-l-brand-teal shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-gray-700">Approved</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-brand-shadeTeal">{stats.approved || 0}</div>
-            </CardContent>
-          </Card>
-          
-          <Card className="border-l-4 border-l-brand-pink shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-gray-700">Hired</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-brand-shadePink">{stats.hired || 0}</div>
-            </CardContent>
-          </Card>
-          
-          <Card className="border-l-4 border-l-brand-lightTeal shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-gray-700">Completed</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-brand-teal">{stats.completed || 0}</div>
+            <CardContent className="relative z-10">
+              <div className="text-3xl font-bold text-gray-900 group-hover:scale-105 transition-transform origin-left">{stats.total || 0}</div>
             </CardContent>
           </Card>
 
-          <Card className="border-l-4 border-l-brand-shadePink shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-gray-700">Rejected</CardTitle>
+          <Card className="relative overflow-hidden border-0 shadow-sm hover:shadow-md transition-all duration-300 group">
+            <div className="absolute top-0 left-0 w-1 h-full bg-brand-yellow"></div>
+            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-brand-lightYellow/30 group-hover:bg-brand-lightYellow/50 transition-colors"></div>
+            <CardHeader className="pb-2 relative z-10">
+              <CardTitle className="text-sm font-medium text-gray-600">Pending Review</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-brand-shadePink">{stats.rejected || 0}</div>
+            <CardContent className="relative z-10">
+              <div className="text-3xl font-bold text-brand-shadeYellow group-hover:scale-105 transition-transform origin-left">{stats.pending || 0}</div>
+            </CardContent>
+          </Card>
+
+          <Card className="relative overflow-hidden border-0 shadow-sm hover:shadow-md transition-all duration-300 group">
+            <div className="absolute top-0 left-0 w-1 h-full bg-brand-teal"></div>
+            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-brand-lightTeal/30 group-hover:bg-brand-lightTeal/50 transition-colors"></div>
+            <CardHeader className="pb-2 relative z-10">
+              <CardTitle className="text-sm font-medium text-gray-600">Approved</CardTitle>
+            </CardHeader>
+            <CardContent className="relative z-10">
+              <div className="text-3xl font-bold text-brand-shadeTeal group-hover:scale-105 transition-transform origin-left">{stats.approved || 0}</div>
+            </CardContent>
+          </Card>
+
+          <Card className="relative overflow-hidden border-0 shadow-sm hover:shadow-md transition-all duration-300 group">
+            <div className="absolute top-0 left-0 w-1 h-full bg-brand-blue"></div>
+            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-indigo-100 group-hover:bg-indigo-200 transition-colors"></div>
+            <CardHeader className="pb-2 relative z-10">
+              <CardTitle className="text-sm font-medium text-gray-600">Hired</CardTitle>
+            </CardHeader>
+            <CardContent className="relative z-10">
+              <div className="text-3xl font-bold text-brand-shadeBlue group-hover:scale-105 transition-transform origin-left">{stats.hired || 0}</div>
+            </CardContent>
+          </Card>
+
+          <Card className="relative overflow-hidden border-0 shadow-sm hover:shadow-md transition-all duration-300 group">
+            <div className="absolute top-0 left-0 w-1 h-full bg-brand-teal"></div>
+            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-emerald-100 group-hover:bg-emerald-200 transition-colors"></div>
+            <CardHeader className="pb-2 relative z-10">
+              <CardTitle className="text-sm font-medium text-gray-600">Completed</CardTitle>
+            </CardHeader>
+            <CardContent className="relative z-10">
+              <div className="text-3xl font-bold text-teal-700 group-hover:scale-105 transition-transform origin-left">{stats.completed || 0}</div>
+            </CardContent>
+          </Card>
+
+          <Card className="relative overflow-hidden border-0 shadow-sm hover:shadow-md transition-all duration-300 group">
+            <div className="absolute top-0 left-0 w-1 h-full bg-brand-pink"></div>
+            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-brand-lightPink/30 group-hover:bg-brand-lightPink/50 transition-colors"></div>
+            <CardHeader className="pb-2 relative z-10">
+              <CardTitle className="text-sm font-medium text-gray-600">Rejected</CardTitle>
+            </CardHeader>
+            <CardContent className="relative z-10">
+              <div className="text-3xl font-bold text-brand-shadePink group-hover:scale-105 transition-transform origin-left">{stats.rejected || 0}</div>
             </CardContent>
           </Card>
         </div>
 
         {/* Main Content */}
         <Tabs defaultValue="applications" className="space-y-6">
-          <TabsList className="bg-white shadow-md border border-gray-200">
-            <TabsTrigger value="applications">Applications</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="fee-structures">Fee Structures</TabsTrigger>
-            <TabsTrigger value="facilities">Facilities</TabsTrigger>
-            {(adminRole === 'super_admin' || adminRole === 'app_admin') && (
-              <TabsTrigger value="admins">Admins</TabsTrigger>
-            )}
-          </TabsList>
+          <div className="bg-white p-1 rounded-xl shadow-sm border border-gray-100 inline-flex">
+            <TabsList className="bg-transparent h-auto p-0 gap-1">
+              <TabsTrigger
+                value="applications"
+                className="data-[state=active]:bg-brand-blue data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg px-4 py-2 text-sm font-medium transition-all"
+              >
+                Applications
+              </TabsTrigger>
+              <TabsTrigger
+                value="analytics"
+                className="data-[state=active]:bg-brand-blue data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg px-4 py-2 text-sm font-medium transition-all"
+              >
+                Analytics
+              </TabsTrigger>
+              <TabsTrigger
+                value="fee-structures"
+                className="data-[state=active]:bg-brand-blue data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg px-4 py-2 text-sm font-medium transition-all"
+              >
+                Fee Structures
+              </TabsTrigger>
+              <TabsTrigger
+                value="facilities"
+                className="data-[state=active]:bg-brand-blue data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg px-4 py-2 text-sm font-medium transition-all"
+              >
+                Facilities
+              </TabsTrigger>
+              {(adminRole === 'super_admin' || adminRole === 'app_admin') && (
+                <TabsTrigger
+                  value="admins"
+                  className="data-[state=active]:bg-brand-blue data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg px-4 py-2 text-sm font-medium transition-all"
+                >
+                  Admins
+                </TabsTrigger>
+              )}
+            </TabsList>
+          </div>
 
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-6 mt-6">
@@ -660,26 +826,28 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
 
-        {/* Applications Tab */}
+          {/* Applications Tab */}
 
           {/* Applications Tab */}
           <TabsContent value="applications" className="space-y-6 mt-6">
             {/* Search and Filters */}
-            <Card className="bg-white border border-gray-200 shadow-sm">
+            <Card className="bg-white border-0 shadow-sm border border-gray-100 overflow-hidden">
               {/* Header */}
-              <div className="bg-white border-b border-gray-200 px-6 py-4">
+              <div className="bg-white/50 backdrop-blur-sm border-b border-gray-100 px-6 py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Filter className="h-5 w-5 text-gray-600" />
+                    <div className="h-10 w-10 rounded-full bg-brand-lightBlue flex items-center justify-center">
+                      <Filter className="h-5 w-5 text-brand-blue" />
+                    </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">Filters & Search</h3>
-                      <p className="text-sm text-gray-600">Refine your application search</p>
+                      <h3 className="text-lg font-bold text-gray-900">Filters & Search</h3>
+                      <p className="text-sm text-gray-500 font-medium">Refine your application search</p>
                     </div>
                   </div>
-                  <Button 
+                  <Button
                     variant="ghost"
                     size="sm"
-                    className="text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                    className="text-gray-500 hover:text-brand-blue hover:bg-brand-lightBlue/30 transition-colors"
                     onClick={() => {
                       setSearchQuery("");
                       setStatusFilter("all");
@@ -695,33 +863,36 @@ export default function AdminDashboard() {
 
               <CardContent className="p-6 space-y-6 bg-white">
                 {/* Search Row */}
-                <div className="relative">
-                  <Input
-                    type="text"
-                    placeholder="Search by email, name, or city..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-10 h-11 border border-gray-300 bg-white focus:border-gray-400 focus:ring-0"
-                  />
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery("")}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                      <XCircle className="h-4 w-4" />
-                    </button>
-                  )}
+                <div className="relative group">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-blue to-brand-teal rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-200"></div>
+                  <div className="relative">
+                    <Input
+                      type="text"
+                      placeholder="Search by email, name, or city..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-11 pr-10 h-12 rounded-xl border-gray-200 bg-white focus:border-brand-blue focus:ring-4 focus:ring-brand-lightBlue/20 transition-all text-base"
+                    />
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-brand-blue transition-colors" />
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery("")}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Filter Row */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="space-y-2">
-                    <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">
                       APPLICATION STATUS
                     </label>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="w-full h-10 border border-gray-300 bg-white">
+                      <SelectTrigger className="w-full h-11 rounded-lg border-gray-200 bg-gray-50/50 hover:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all flex flex-row items-center justify-between [&>span]:order-1 [&>svg]:order-2">
                         <SelectValue placeholder="All statuses" />
                       </SelectTrigger>
                       <SelectContent>
@@ -734,13 +905,13 @@ export default function AdminDashboard() {
                       </SelectContent>
                     </Select>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide">
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">
                       CURRENT STAGE
                     </label>
                     <Select value={stageFilter} onValueChange={setStageFilter}>
-                      <SelectTrigger className="w-full h-10 border border-gray-300 bg-white">
+                      <SelectTrigger className="w-full h-11 rounded-lg border-gray-200 bg-gray-50/50 hover:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all flex flex-row items-center justify-between [&>span]:order-1 [&>svg]:order-2">
                         <SelectValue placeholder="All stages" />
                       </SelectTrigger>
                       <SelectContent>
@@ -753,13 +924,13 @@ export default function AdminDashboard() {
                       </SelectContent>
                     </Select>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide">
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">
                       CITY
                     </label>
                     <Select value={cityFilter} onValueChange={setCityFilter}>
-                      <SelectTrigger className="w-full h-10 border border-gray-300 bg-white">
+                      <SelectTrigger className="w-full h-11 rounded-lg border-gray-200 bg-gray-50/50 hover:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all flex flex-row items-center justify-between [&>span]:order-1 [&>svg]:order-2">
                         <SelectValue placeholder="All cities" />
                       </SelectTrigger>
                       <SelectContent>
@@ -772,13 +943,13 @@ export default function AdminDashboard() {
                       </SelectContent>
                     </Select>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide">
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">
                       ONBOARDING PROGRESS
                     </label>
                     <Select value={onboardingFilter} onValueChange={setOnboardingFilter}>
-                      <SelectTrigger className="w-full h-10 border border-gray-300 bg-white">
+                      <SelectTrigger className="w-full h-11 rounded-lg border-gray-200 bg-gray-50/50 hover:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all flex flex-row items-center justify-between [&>span]:order-1 [&>svg]:order-2">
                         <SelectValue placeholder="All progress" />
                       </SelectTrigger>
                       <SelectContent>
@@ -794,20 +965,20 @@ export default function AdminDashboard() {
                 {activeFiltersCount > 0 && (
                   <div className="pt-4 border-t border-gray-200">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-medium text-gray-700">Active Filters:</span>
+                      <span className="text-sm font-bold text-gray-500 uppercase tracking-wide mr-2">Active Filters:</span>
                       {searchQuery && (
-                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-0 px-3 py-1 rounded-full">
+                        <Badge variant="secondary" className="bg-brand-lightBlue text-brand-shadeBlue border border-brand-blue/20 px-3 py-1 rounded-full font-medium">
                           Search: "{searchQuery}"
                           <button
                             onClick={() => setSearchQuery("")}
-                            className="ml-2 hover:text-blue-900 transition-colors inline-flex items-center"
+                            className="ml-2 hover:text-brand-blue transition-colors inline-flex items-center"
                           >
-                            <XCircle className="h-3 w-3" />
+                            <XCircle className="h-3.5 w-3.5" />
                           </button>
                         </Badge>
                       )}
                       {statusFilter !== "all" && (
-                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-0 px-3 py-1 rounded-full">
+                        <Badge variant="secondary" className="bg-brand-lightBlue text-brand-shadeBlue border border-brand-blue/20 px-3 py-1 rounded-full font-medium">
                           Status: {statusFilter === "pending"
                             ? "Pending Review"
                             : statusFilter === "on_hold"
@@ -815,42 +986,42 @@ export default function AdminDashboard() {
                               : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
                           <button
                             onClick={() => setStatusFilter("all")}
-                            className="ml-2 hover:text-blue-900 transition-colors inline-flex items-center"
+                            className="ml-2 hover:text-brand-blue transition-colors inline-flex items-center"
                           >
-                            <XCircle className="h-3 w-3" />
+                            <XCircle className="h-3.5 w-3.5" />
                           </button>
                         </Badge>
                       )}
                       {stageFilter !== "all" && (
-                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-0 px-3 py-1 rounded-full">
+                        <Badge variant="secondary" className="bg-brand-lightBlue text-brand-shadeBlue border border-brand-blue/20 px-3 py-1 rounded-full font-medium">
                           Stage: {stageFilter}
                           <button
                             onClick={() => setStageFilter("all")}
-                            className="ml-2 hover:text-blue-900 transition-colors inline-flex items-center"
+                            className="ml-2 hover:text-brand-blue transition-colors inline-flex items-center"
                           >
-                            <XCircle className="h-3 w-3" />
+                            <XCircle className="h-3.5 w-3.5" />
                           </button>
                         </Badge>
                       )}
                       {cityFilter !== "all" && (
-                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-0 px-3 py-1 rounded-full">
+                        <Badge variant="secondary" className="bg-brand-lightBlue text-brand-shadeBlue border border-brand-blue/20 px-3 py-1 rounded-full font-medium">
                           City: {cityFilter}
                           <button
                             onClick={() => setCityFilter("all")}
-                            className="ml-2 hover:text-blue-900 transition-colors inline-flex items-center"
+                            className="ml-2 hover:text-brand-blue transition-colors inline-flex items-center"
                           >
-                            <XCircle className="h-3 w-3" />
+                            <XCircle className="h-3.5 w-3.5" />
                           </button>
                         </Badge>
                       )}
                       {onboardingFilter !== "all" && (
-                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-0 px-3 py-1 rounded-full">
+                        <Badge variant="secondary" className="bg-brand-lightBlue text-brand-shadeBlue border border-brand-blue/20 px-3 py-1 rounded-full font-medium">
                           Progress: {onboardingFilter === "started" ? "In Progress" : "Completed"}
                           <button
                             onClick={() => setOnboardingFilter("all")}
-                            className="ml-2 hover:text-blue-900 transition-colors inline-flex items-center"
+                            className="ml-2 hover:text-brand-blue transition-colors inline-flex items-center"
                           >
-                            <XCircle className="h-3 w-3" />
+                            <XCircle className="h-3.5 w-3.5" />
                           </button>
                         </Badge>
                       )}
@@ -892,19 +1063,19 @@ export default function AdminDashboard() {
                       <TableHead className="font-semibold text-gray-700 py-3 px-4 text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
-                    <TableBody>
-                      {filteredApplications.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={9} className="text-center py-12 text-gray-500 px-4">
-                            <div className="flex flex-col items-center gap-2">
-                              <FileText className="h-8 w-8 text-gray-400" />
-                              <p className="text-sm font-medium">No applications found</p>
-                              <p className="text-xs text-gray-400">Try adjusting your search or filters</p>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        filteredApplications.map((app) => (
+                  <TableBody>
+                    {filteredApplications.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={9} className="text-center py-12 text-gray-500 px-4">
+                          <div className="flex flex-col items-center gap-2">
+                            <FileText className="h-8 w-8 text-gray-400" />
+                            <p className="text-sm font-medium">No applications found</p>
+                            <p className="text-xs text-gray-400">Try adjusting your search or filters</p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredApplications.map((app) => (
                         <TableRow key={app.id} className="hover:bg-gray-50 border-b border-gray-200 transition-colors">
                           <TableCell className="text-sm py-3 px-4 text-left font-medium">{app.name || 'N/A'}</TableCell>
                           <TableCell className="text-sm py-3 px-4 text-left">{app.email}</TableCell>
@@ -918,9 +1089,9 @@ export default function AdminDashboard() {
                           </TableCell>
                           <TableCell className="py-3 px-4 text-left">{getOnboardingStatusBadge(app.onboardingStatus)}</TableCell>
                           <TableCell className="text-sm text-gray-600 py-3 px-4 text-left">
-                            {app.createdAt ? new Date(app.createdAt).toLocaleDateString('en-GB', { 
-                              day: '2-digit', 
-                              month: 'short', 
+                            {app.createdAt ? new Date(app.createdAt).toLocaleDateString('en-GB', {
+                              day: '2-digit',
+                              month: 'short',
                               year: 'numeric',
                               hour: '2-digit',
                               minute: '2-digit'
@@ -954,7 +1125,7 @@ export default function AdminDashboard() {
                                       }
                                       return null;
                                     };
-                                    
+
                                     // Use existing report but enhance acknowledgements with timestamps if missing
                                     const enhancedAcknowledgements = {
                                       ...app.report.acknowledgements,
@@ -987,19 +1158,19 @@ export default function AdminDashboard() {
                                         app?.progress_liabilities?.confirmedAt
                                       ),
                                     };
-                                    
+
                                     const enhancedReport = {
                                       ...app.report,
                                       acknowledgements: enhancedAcknowledgements
                                     };
-                                    
+
                                     setSelectedReport(enhancedReport);
                                   } else {
                                     // Extract vehicle type from fountain data if available
-                                    const vehicleTypeFromFountain = app.fountainData 
-                                      ? getVehicleTypeFromMOT(app.fountainData) 
+                                    const vehicleTypeFromFountain = app.fountainData
+                                      ? getVehicleTypeFromMOT(app.fountainData)
                                       : null;
-                                    
+
                                     // Create a report-like object from available data
                                     setSelectedReport({
                                       driverEmail: app.email,
@@ -1054,13 +1225,13 @@ export default function AdminDashboard() {
                                 <Eye className="h-3 w-3 mr-1" />
                                 View
                               </Button>
-                              
+
                               {/* Quick Approve/Reject for completed applications */}
                               {app.onboardingStatus === 'completed' && (adminRole === 'super_admin' || adminRole === 'app_admin' || adminRole === 'admin_fleet') && app.status !== 'approved' && app.status !== 'rejected' && app.status !== 'hired' && (
                                 <>
                                   <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                      <Button 
+                                      <Button
                                         size="sm"
                                         className="bg-brand-shadeTeal hover:bg-brand-teal text-white shadow-md hover:shadow-lg"
                                       >
@@ -1087,10 +1258,10 @@ export default function AdminDashboard() {
                                       </AlertDialogFooter>
                                     </AlertDialogContent>
                                   </AlertDialog>
-                                  
+
                                   <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                      <Button 
+                                      <Button
                                         size="sm"
                                         variant="outline"
                                         className="text-brand-shadePink hover:text-brand-pink hover:bg-brand-lightPink border-brand-pink"
@@ -1125,7 +1296,7 @@ export default function AdminDashboard() {
                               {app.status === 'approved' && (adminRole === 'super_admin' || adminRole === 'app_admin' || adminRole === 'admin_fleet') && (
                                 <AlertDialog>
                                   <AlertDialogTrigger asChild>
-                                    <Button 
+                                    <Button
                                       size="sm"
                                       className="bg-brand-blue hover:bg-brand-shadeBlue text-white shadow-md hover:shadow-lg"
                                     >
@@ -1154,115 +1325,56 @@ export default function AdminDashboard() {
                                 </AlertDialog>
                               )}
 
-                              {/* Edit button for detailed status update */}
+                              {/* Secondary Actions Dropdown */}
                               {(adminRole === 'super_admin' || adminRole === 'app_admin' || adminRole === 'admin_fleet') && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    setSelectedReport(null);
-                                    setSelectedApplication(app);
-                                  }}
-                                >
-                                  <Edit className="h-3 w-3 mr-1" />
-                                  Edit
-                                </Button>
-                              )}
-                              
-                              {app.onboardingStatus === 'completed' && (adminRole === 'super_admin' || adminRole === 'app_admin') && (
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button 
-                                      variant="outline" 
-                                      size="sm"
-                                      className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 border-orange-200"
-                                    >
-                                      <RefreshCw className="h-3 w-3 mr-1" />
-                                      Reset
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="h-8 w-8 p-0">
+                                      <span className="sr-only">Open menu</span>
+                                      <MoreHorizontal className="h-4 w-4" />
                                     </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent className="z-[200]">
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Reset Onboarding Progress</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        Are you sure you want to reset this driver's onboarding progress? 
-                                        This will allow them to restart the onboarding process from the beginning.
-                                        Their personal information and Fountain data will be preserved.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                      <AlertDialogAction
-                                        onClick={() => handleResetProgress(app.email)}
-                                        className="bg-orange-600 hover:bg-orange-700"
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-[160px] z-50 bg-white">
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        setSelectedReport(null);
+                                        setSelectedApplication(app);
+                                      }}
+                                    >
+                                      <Edit className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+                                      Edit
+                                    </DropdownMenuItem>
+
+                                    {app.onboardingStatus === 'completed' && (adminRole === 'super_admin' || adminRole === 'app_admin') && (
+                                      <DropdownMenuItem
+                                        onClick={() => setApplicationToReset(app)}
+                                        className="text-orange-600 focus:text-orange-600 focus:bg-orange-50"
                                       >
+                                        <RefreshCw className="mr-2 h-3.5 w-3.5" />
                                         Reset Progress
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              )}
-                              
-                              {(adminRole === 'super_admin' || adminRole === 'app_admin') && (
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button 
-                                      variant="destructive" 
-                                      size="sm"
-                                      className="bg-red-600 hover:bg-red-700"
-                                    >
-                                      <Trash2 className="h-3 w-3 mr-1" />
-                                      Delete
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent className="z-[200] border-red-200">
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle className="flex items-center gap-2 text-red-600">
-                                        <AlertTriangle className="h-5 w-5" />
-                                        Delete Application
-                                      </AlertDialogTitle>
-                                      <AlertDialogDescription className="text-gray-700 pt-2">
-                                        <div className="space-y-2">
-                                          <p className="font-semibold text-red-600">
-                                            This action cannot be undone!
-                                          </p>
-                                          <p>
-                                            Are you sure you want to permanently delete this application for <span className="font-medium">{app.email}</span>?
-                                          </p>
-                                          <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
-                                            <p className="text-sm font-medium text-red-900 mb-1">The following data will be permanently removed:</p>
-                                            <ul className="text-sm text-red-800 list-disc list-inside space-y-1">
-                                              <li>Application record from Fountain applicants</li>
-                                              <li>Driver profile and onboarding progress</li>
-                                              <li>Availability schedule</li>
-                                              <li>Verification details</li>
-                                              <li>All associated reports</li>
-                                            </ul>
-                                          </div>
-                                        </div>
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                      <AlertDialogAction
-                                        onClick={() => handleDeleteApplication(app.email)}
-                                        className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                                      </DropdownMenuItem>
+                                    )}
+
+                                    {(adminRole === 'super_admin' || adminRole === 'app_admin') && (
+                                      <DropdownMenuItem
+                                        onClick={() => setApplicationToDelete(app)}
+                                        className="text-red-600 focus:text-red-600 focus:bg-red-50"
                                       >
-                                        <Trash2 className="h-4 w-4 mr-2" />
-                                        Delete Permanently
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
+                                        <Trash2 className="mr-2 h-3.5 w-3.5" />
+                                        Delete
+                                      </DropdownMenuItem>
+                                    )}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               )}
                             </div>
                           </TableCell>
                         </TableRow>
                       )))}
-                    </TableBody>
-                  </Table>
-                </div>
+                  </TableBody>
+                </Table>
               </div>
+            </div>
           </TabsContent>
 
           {/* Fee Structures Tab */}
@@ -1281,113 +1393,115 @@ export default function AdminDashboard() {
               <AdminManager />
             </TabsContent>
           )}
-          
+
         </Tabs>
       </div>
 
       {/* Status Update Dialog */}
-      {selectedApplication && (
-        <Dialog open={!!selectedApplication} onOpenChange={(open) => {
-          if (!open) {
-            setSelectedApplication(null);
-            setAdminNotes("");
-          }
-        }}>
-          <DialogContent className="max-w-2xl z-[200]">
-            <DialogHeader>
-              <DialogTitle>Update Application Status</DialogTitle>
-              <DialogDescription>
-                Managing application for {selectedApplication.email}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-6 mt-4">
-              {/* Application Summary */}
-              <Card className="bg-gray-50 border border-gray-200">
-                <CardContent className="pt-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-600">Name:</span>
-                      <span className="ml-2 font-medium">{selectedApplication.name || 'N/A'}</span>
+      {
+        selectedApplication && (
+          <Dialog open={!!selectedApplication} onOpenChange={(open) => {
+            if (!open) {
+              setSelectedApplication(null);
+              setAdminNotes("");
+            }
+          }}>
+            <DialogContent className="max-w-2xl z-[200]">
+              <DialogHeader>
+                <DialogTitle>Update Application Status</DialogTitle>
+                <DialogDescription>
+                  Managing application for {selectedApplication.email}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-6 mt-4">
+                {/* Application Summary */}
+                <Card className="bg-gray-50 border border-gray-200">
+                  <CardContent className="pt-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-600">Name:</span>
+                        <span className="ml-2 font-medium">{selectedApplication.name || 'N/A'}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">City:</span>
+                        <span className="ml-2 font-medium">{selectedApplication.city || 'N/A'}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Current Stage:</span>
+                        <span className="ml-2 font-medium">{getCurrentStage(selectedApplication)}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Progress:</span>
+                        <span className="ml-2">{getOnboardingStatusBadge(selectedApplication.onboardingStatus)}</span>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-gray-600">City:</span>
-                      <span className="ml-2 font-medium">{selectedApplication.city || 'N/A'}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Current Stage:</span>
-                      <span className="ml-2 font-medium">{getCurrentStage(selectedApplication)}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Progress:</span>
-                      <span className="ml-2">{getOnboardingStatusBadge(selectedApplication.onboardingStatus)}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
 
-              {/* Status Update */}
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block text-gray-700">Application Status</label>
-                  <div className="relative z-[150]">
-                    <Select 
-                      value={selectedApplication.status || 'pending'} 
-                      onValueChange={(value) => {
-                        setSelectedApplication({...selectedApplication, status: value});
-                      }}
-                      disabled={adminRole === 'admin_view'}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent className="z-[250] bg-white">
-                        <SelectItem value="pending">Pending Review</SelectItem>
-                        <SelectItem value="approved">Approved</SelectItem>
-                        <SelectItem value="hired">Hired</SelectItem>
-                        <SelectItem value="rejected">Rejected</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {adminRole === 'admin_view' && (
-                      <p className="text-xs text-gray-500 mt-1">View-only mode: You cannot edit application status</p>
-                    )}
+                {/* Status Update */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block text-gray-700">Application Status</label>
+                    <div className="relative z-[150]">
+                      <Select
+                        value={selectedApplication.status || 'pending'}
+                        onValueChange={(value) => {
+                          setSelectedApplication({ ...selectedApplication, status: value });
+                        }}
+                        disabled={adminRole === 'admin_view'}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent className="z-[250] bg-white">
+                          <SelectItem value="pending">Pending Review</SelectItem>
+                          <SelectItem value="approved">Approved</SelectItem>
+                          <SelectItem value="hired">Hired</SelectItem>
+                          <SelectItem value="rejected">Rejected</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {adminRole === 'admin_view' && (
+                        <p className="text-xs text-gray-500 mt-1">View-only mode: You cannot edit application status</p>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block text-gray-700">Admin Notes (Optional)</label>
-                  <Textarea
-                    placeholder="Add internal notes about this application..."
-                    value={adminNotes}
-                    onChange={(e) => setAdminNotes(e.target.value)}
-                    rows={4}
-                    className="resize-none"
-                    disabled={adminRole === 'admin_view'}
-                  />
+                  <div>
+                    <label className="text-sm font-medium mb-2 block text-gray-700">Admin Notes (Optional)</label>
+                    <Textarea
+                      placeholder="Add internal notes about this application..."
+                      value={adminNotes}
+                      onChange={(e) => setAdminNotes(e.target.value)}
+                      rows={4}
+                      className="resize-none"
+                      disabled={adminRole === 'admin_view'}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSelectedApplication(null);
-                  setAdminNotes("");
-                }}
-                className="w-full sm:w-auto"
-              >
-                Cancel
-              </Button>
-              {(adminRole === 'super_admin' || adminRole === 'app_admin' || adminRole === 'admin_fleet') && (
+              <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
                 <Button
-                  className="bg-brand-blue hover:bg-brand-shadeBlue w-full sm:w-auto shadow-md hover:shadow-lg"
-                  onClick={() => handleStatusUpdate(selectedApplication.email, selectedApplication.status || 'pending')}
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedApplication(null);
+                    setAdminNotes("");
+                  }}
+                  className="w-full sm:w-auto"
                 >
-                  Update Status
+                  Cancel
                 </Button>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
+                {(adminRole === 'super_admin' || adminRole === 'app_admin' || adminRole === 'admin_fleet') && (
+                  <Button
+                    className="bg-brand-blue hover:bg-brand-shadeBlue w-full sm:w-auto shadow-md hover:shadow-lg"
+                    onClick={() => handleStatusUpdate(selectedApplication.email, selectedApplication.status || 'pending')}
+                  >
+                    Update Status
+                  </Button>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+        )
+      }
 
       {/* Report View Dialog */}
       <Dialog open={!!selectedReport} onOpenChange={() => setSelectedReport(null)}>
@@ -1413,7 +1527,7 @@ export default function AdminDashboard() {
               )}
             </div>
           </DialogHeader>
-          
+
           {selectedReport && (
             <div className="space-y-6 mt-4">
               {/* Application Summary */}
@@ -1425,38 +1539,38 @@ export default function AdminDashboard() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      {selectedReport.reportId && (
-                        <div>
-                          <span className="text-gray-600">Report ID:</span>
-                          <span className="ml-2 font-mono text-xs">{selectedReport.reportId}</span>
-                        </div>
-                      )}
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    {selectedReport.reportId && (
                       <div>
-                        <span className="text-gray-600">Email:</span>
-                        <span className="ml-2 font-medium">{selectedReport.driverEmail || selectedReport.email || 'N/A'}</span>
+                        <span className="text-gray-600">Report ID:</span>
+                        <span className="ml-2 font-mono text-xs">{selectedReport.reportId}</span>
                       </div>
-                      <div>
-                        <span className="text-gray-600">Onboarding Status:</span>
-                        <span className="ml-2">{getOnboardingStatusBadge(selectedReport.onboardingStatus || 'started')}</span>
-                      </div>
-                      {selectedReport.createdAt && (
-                        <div>
-                          <span className="text-gray-600">Created:</span>
-                          <span className="ml-2 font-medium">
-                            {selectedReport.createdAt?.toDate?.()?.toLocaleDateString('en-GB', { 
-                              day: '2-digit', 
-                              month: 'short', 
-                              year: 'numeric' 
-                            }) || new Date(selectedReport.createdAt).toLocaleDateString('en-GB', { 
-                              day: '2-digit', 
-                              month: 'short', 
-                              year: 'numeric' 
-                            })}
-                          </span>
-                        </div>
-                      )}
+                    )}
+                    <div>
+                      <span className="text-gray-600">Email:</span>
+                      <span className="ml-2 font-medium">{selectedReport.driverEmail || selectedReport.email || 'N/A'}</span>
                     </div>
+                    <div>
+                      <span className="text-gray-600">Onboarding Status:</span>
+                      <span className="ml-2">{getOnboardingStatusBadge(selectedReport.onboardingStatus || 'started')}</span>
+                    </div>
+                    {selectedReport.createdAt && (
+                      <div>
+                        <span className="text-gray-600">Created:</span>
+                        <span className="ml-2 font-medium">
+                          {selectedReport.createdAt?.toDate?.()?.toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                          }) || new Date(selectedReport.createdAt).toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                          })}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
 
@@ -1592,10 +1706,10 @@ export default function AdminDashboard() {
                           No facilities selected
                         </div>
                       )}
-                      
+
                       <div className="pt-2 border-t flex items-center justify-end gap-2"> Acknowledgement Status:
-                        <Badge variant={selectedReport.facilityPreferences.acknowledged ? "default" : "secondary"} 
-                                className={selectedReport.facilityPreferences.acknowledged ? "bg-green-600" : ""}>
+                        <Badge variant={selectedReport.facilityPreferences.acknowledged ? "default" : "secondary"}
+                          className={selectedReport.facilityPreferences.acknowledged ? "bg-green-600" : ""}>
                           {selectedReport.facilityPreferences.acknowledged ? 'Completed' : 'Pending'}
                         </Badge>
                         {selectedReport.facilityPreferences.acknowledgedAt && (
@@ -1632,8 +1746,8 @@ export default function AdminDashboard() {
                             <div className="flex-1">
                               <span className="font-medium">Smoking Status</span>
                               <p className="text-sm text-gray-600 mt-0.5">
-                                {selectedReport.healthAndSafety.smokingStatus === 'non-smoker' 
-                                  ? "Non-smoker" 
+                                {selectedReport.healthAndSafety.smokingStatus === 'non-smoker'
+                                  ? "Non-smoker"
                                   : "Smoker - Understands policy"}
                               </p>
                             </div>
@@ -1643,11 +1757,10 @@ export default function AdminDashboard() {
                       {selectedReport.healthAndSafety.hasPhysicalDifficulties !== null && selectedReport.healthAndSafety.hasPhysicalDifficulties !== undefined && (
                         <div className="p-3 rounded-lg border bg-gray-50">
                           <div className="flex items-center gap-3">
-                            <div className={`flex-shrink-0 w-8 h-8 rounded-full ${
-                              !selectedReport.healthAndSafety.hasPhysicalDifficulties 
-                                ? 'bg-green-100' 
-                                : 'bg-orange-100'
-                            } flex items-center justify-center`}>
+                            <div className={`flex-shrink-0 w-8 h-8 rounded-full ${!selectedReport.healthAndSafety.hasPhysicalDifficulties
+                              ? 'bg-green-100'
+                              : 'bg-orange-100'
+                              } flex items-center justify-center`}>
                               {!selectedReport.healthAndSafety.hasPhysicalDifficulties ? (
                                 <CheckCircle className="h-5 w-5 text-green-600" />
                               ) : (
@@ -1657,8 +1770,8 @@ export default function AdminDashboard() {
                             <div className="flex-1">
                               <span className="font-medium">Physical Fitness</span>
                               <p className="text-sm text-gray-600 mt-0.5">
-                                {!selectedReport.healthAndSafety.hasPhysicalDifficulties 
-                                  ? "Can climb stairs and has no physical difficulties" 
+                                {!selectedReport.healthAndSafety.hasPhysicalDifficulties
+                                  ? "Can climb stairs and has no physical difficulties"
                                   : "Has physical difficulties"}
                               </p>
                             </div>
@@ -1689,7 +1802,7 @@ export default function AdminDashboard() {
                           cancellationPolicy: 'Cancellation Policy',
                           liabilities: 'Liabilities'
                         };
-                        
+
                         // Map of acknowledgement keys to their date field names
                         const dateFields = {
                           role: 'roleDate',
@@ -1699,16 +1812,16 @@ export default function AdminDashboard() {
                           cancellationPolicy: 'cancellationPolicyDate',
                           liabilities: 'liabilitiesDate'
                         };
-                        
+
                         // Filter to only show acknowledgement status fields (not date fields)
-                        const acknowledgementEntries = Object.entries(selectedReport.acknowledgements).filter(([key]) => 
+                        const acknowledgementEntries = Object.entries(selectedReport.acknowledgements).filter(([key]) =>
                           !key.toLowerCase().includes('date') && !key.toLowerCase().includes('at')
                         );
-                        
+
                         return acknowledgementEntries.map(([key, value]) => {
                           const dateField = dateFields[key];
                           const timestamp = selectedReport.acknowledgements[dateField];
-                          
+
                           return (
                             <div key={key} className="flex items-center justify-between p-3 rounded-lg border bg-gray-50">
                               <div className="flex items-center gap-3 flex-1">
@@ -1734,7 +1847,7 @@ export default function AdminDashboard() {
                                     if (timestamp === null || timestamp === undefined || timestamp === '') {
                                       return null;
                                     }
-                                    
+
                                     let date;
                                     try {
                                       // Firestore Timestamp object (has toDate method)
@@ -1753,12 +1866,12 @@ export default function AdminDashboard() {
                                       else if (timestamp) {
                                         date = new Date(timestamp);
                                       }
-                                      
+
                                       // Validate date
                                       if (!date || isNaN(date.getTime())) {
                                         return null;
                                       }
-                                      
+
                                       return (
                                         <p className="text-xs text-gray-400 mt-1">
                                           {date.toLocaleDateString('en-GB', {
@@ -1815,6 +1928,80 @@ export default function AdminDashboard() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+      {/* Reset Progress Confirmation Dialog */}
+      <AlertDialog open={!!applicationToReset} onOpenChange={(open) => !open && setApplicationToReset(null)}>
+        <AlertDialogContent className="z-[200]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset Onboarding Progress</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to reset this driver's onboarding progress?
+              This will allow them to restart the onboarding process from the beginning.
+              Their personal information and Fountain data will be preserved.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (applicationToReset) {
+                  handleResetProgress(applicationToReset.email);
+                  setApplicationToReset(null);
+                }
+              }}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              Reset Progress
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Application Confirmation Dialog */}
+      <AlertDialog open={!!applicationToDelete} onOpenChange={(open) => !open && setApplicationToDelete(null)}>
+        <AlertDialogContent className="z-[200] border-red-200">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              Delete Application
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-700 pt-2">
+              <div className="space-y-2">
+                <p className="font-semibold text-red-600">
+                  This action cannot be undone!
+                </p>
+                <p>
+                  Are you sure you want to permanently delete this application for <span className="font-medium">{applicationToDelete?.email}</span>?
+                </p>
+                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-sm font-medium text-red-900 mb-1">The following data will be permanently removed:</p>
+                  <ul className="text-sm text-red-800 list-disc list-inside space-y-1">
+                    <li>Application record from Fountain applicants</li>
+                    <li>Driver profile and onboarding progress</li>
+                    <li>Availability schedule</li>
+                    <li>Verification details</li>
+                    <li>All associated reports</li>
+                  </ul>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (applicationToDelete) {
+                  handleDeleteApplication(applicationToDelete?.email);
+                  setApplicationToDelete(null);
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Permanently
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div >
   );
 }
