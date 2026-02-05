@@ -14,14 +14,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Textarea } from "../../components/ui/textarea";
 import { Input } from "../../components/ui/input";
 import { useToast } from "../../hooks/use-toast";
-import { 
-  Users, 
-  FileText, 
-  Settings, 
-  LogOut, 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
+import {
+  Users,
+  FileText,
+  Settings,
+  LogOut,
+  CheckCircle,
+  XCircle,
+  Clock,
   Trash2,
   Edit,
   BarChart3,
@@ -31,13 +31,27 @@ import {
   Filter,
   MapPin,
   AlertTriangle,
-  UserCheck
+  UserCheck,
+  PauseCircle
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { getCurrentStage } from "../../lib/progress-tracking";
 import LaundryheapLogo from "../../assets/logo";
 import { auth } from "../../lib/firebase";
 import { getVehicleTypeFromMOT } from "../../lib/utils";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
 
 const DAYS_ORDER = ['Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays', 'Sundays'];
 
@@ -183,6 +197,96 @@ export default function AdminDashboard() {
   const uniqueCities = [...new Set(applications.map(app => app.city).filter(Boolean))].sort();
   const uniqueStages = [...new Set(applications.map(app => getCurrentStage(app)))].sort();
 
+  // Derived analytics data
+  const withdrawnCount = applications.filter(app => app.status === "withdrawn").length;
+  const onHoldCount = applications.filter(app => app.status === "on_hold").length;
+
+  const statusChartData = [
+    { status: "Pending", key: "pending", count: stats.pending || 0 },
+    { status: "On Hold", key: "on_hold", count: onHoldCount },
+    { status: "Approved", key: "approved", count: stats.approved || 0 },
+    { status: "Hired", key: "hired", count: stats.hired || 0 },
+    { status: "Rejected", key: "rejected", count: stats.rejected || 0 },
+    { status: "Withdrawn", key: "withdrawn", count: withdrawnCount },
+  ].filter(item => item.count > 0);
+
+  const onboardingChartData = [
+    { name: "Completed", value: stats.completed || 0 },
+    { name: "In Progress", value: stats.inProgress || 0 },
+  ].filter(item => item.value > 0);
+
+  const applicationsByDate = (() => {
+    const dateMap = {};
+
+    applications.forEach((app) => {
+      if (!app.createdAt) return;
+      const dateObj = app.createdAt instanceof Date ? app.createdAt : new Date(app.createdAt);
+      if (Number.isNaN(dateObj.getTime())) return;
+
+      const key = dateObj.toISOString().slice(0, 10); // YYYY-MM-DD
+      if (!dateMap[key]) {
+        dateMap[key] = { date: key, total: 0, hired: 0, rejected: 0 };
+      }
+      dateMap[key].total += 1;
+      if (app.status === "hired") dateMap[key].hired += 1;
+      if (app.status === "rejected") dateMap[key].rejected += 1;
+    });
+
+    return Object.values(dateMap)
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .map((item) => ({
+        ...item,
+        label: new Date(item.date).toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "short",
+        }),
+      }));
+  })();
+
+  const cityInsights = (() => {
+    const cityMap = {};
+
+    applications.forEach((app) => {
+      const city = app.city || "Unknown";
+      if (!cityMap[city]) {
+        cityMap[city] = {
+          city,
+          total: 0,
+          hired: 0,
+          completed: 0,
+          rejected: 0,
+        };
+      }
+
+      cityMap[city].total += 1;
+      if (app.status === "hired") cityMap[city].hired += 1;
+      if (app.onboardingStatus === "completed") cityMap[city].completed += 1;
+      if (app.status === "rejected") cityMap[city].rejected += 1;
+    });
+
+    return Object.values(cityMap)
+      .map((item) => ({
+        ...item,
+        // Conversion vs total applications
+        conversionRate: item.total > 0 ? Math.round((item.hired / item.total) * 100) : 0,
+        // Conversion vs completed applications
+        completedConversionRate:
+          item.completed > 0 ? Math.round((item.hired / item.completed) * 100) : 0,
+      }))
+      .sort((a, b) => b.hired - a.hired);
+  })();
+
+  const STATUS_COLORS = {
+    Pending: "#fbbf24",
+    "On Hold": "#f97316",
+    Approved: "#0ea5e9",
+    Hired: "#22c55e",
+    Rejected: "#ef4444",
+    Withdrawn: "#6b7280",
+  };
+
+  const PIE_COLORS = ["#0ea5e9", "#22c55e", "#f97316", "#6366f1", "#ec4899"];
+
   // Count active filters
   const activeFiltersCount = [
     searchQuery && 1,
@@ -222,19 +326,33 @@ export default function AdminDashboard() {
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      pending: { variant: "secondary", icon: Clock },
-      approved: { variant: "default", icon: CheckCircle },
-      rejected: { variant: "destructive", icon: XCircle },
-      hired: { variant: "default", icon: UserCheck, className: "bg-green-600 hover:bg-green-700" },
+      pending: { variant: "secondary", icon: Clock, label: "Pending" },
+      approved: { variant: "default", icon: CheckCircle, label: "Approved" },
+      rejected: { variant: "destructive", icon: XCircle, label: "Rejected" },
+      hired: {
+        variant: "default",
+        icon: UserCheck,
+        className: "bg-green-600 hover:bg-green-700",
+        label: "Hired",
+      },
+      on_hold: {
+        variant: "outline",
+        icon: PauseCircle,
+        className: "border-amber-400 text-amber-700 bg-amber-50",
+        label: "On Hold",
+      },
     };
     
     const config = statusConfig[status] || statusConfig.pending;
     const Icon = config.icon;
     
     return (
-      <Badge variant={config.variant} className={`flex items-center gap-1 ${config.className || ''}`}>
+      <Badge
+        variant={config.variant}
+        className={`flex items-center gap-1 ${config.className || ""}`}
+      >
         <Icon className="h-3 w-3" />
-        {status || 'pending'}
+        {config.label || status || "pending"}
       </Badge>
     );
   };
@@ -369,12 +487,180 @@ export default function AdminDashboard() {
         <Tabs defaultValue="applications" className="space-y-6">
           <TabsList className="bg-white shadow-md border border-gray-200">
             <TabsTrigger value="applications">Applications</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="fee-structures">Fee Structures</TabsTrigger>
             <TabsTrigger value="facilities">Facilities</TabsTrigger>
             {(adminRole === 'super_admin' || adminRole === 'app_admin') && (
               <TabsTrigger value="admins">Admins</TabsTrigger>
             )}
           </TabsList>
+
+          {/* Analytics Tab */}
+          <TabsContent value="analytics" className="space-y-6 mt-6">
+            <Card className="border border-gray-200 shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-brand-blue" />
+                  <div>
+                    <CardTitle className="text-base font-semibold text-gray-900">
+                      Driver Funnel & Insights
+                    </CardTitle>
+                    <CardDescription className="text-sm text-gray-600">
+                      Overview of applications moving from applied to hired across cities.
+                    </CardDescription>
+                  </div>
+                </div>
+                <Badge variant="outline" className="text-xs">
+                  {applications.length} applications analysed
+                </Badge>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Status distribution */}
+                  <div className="col-span-1 lg:col-span-2">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-sm font-semibold text-gray-800">Application Outcomes</p>
+                      <p className="text-xs text-gray-500">
+                        Pending, approved, hired, rejected, withdrawn
+                      </p>
+                    </div>
+                    <div className="h-64 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={statusChartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                          <XAxis dataKey="status" tick={{ fontSize: 11 }} />
+                          <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                          <Tooltip />
+                          <Legend />
+                          <Bar dataKey="count" name="Applications">
+                            {statusChartData.map((entry) => (
+                              <Cell
+                                key={entry.status}
+                                fill={STATUS_COLORS[entry.status] || "#0f172a"}
+                              />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* Onboarding funnel */}
+                  <div className="col-span-1">
+                    <p className="text-sm font-semibold text-gray-800 mb-3">Onboarding Progress</p>
+                    <div className="h-56 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={onboardingChartData}
+                            dataKey="value"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={70}
+                            labelLine={false}
+                            label={({ name, percent }) =>
+                              `${name} ${(percent * 100).toFixed(0)}%`
+                            }
+                          >
+                            {onboardingChartData.map((entry, index) => (
+                              <Cell
+                                key={entry.name}
+                                fill={PIE_COLORS[index % PIE_COLORS.length]}
+                              />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="mt-3 space-y-1 text-xs text-gray-600">
+                      <p>
+                        <span className="font-semibold">Completed:</span>{" "}
+                        {stats.completed || 0}
+                      </p>
+                      <p>
+                        <span className="font-semibold">In Progress:</span>{" "}
+                        {stats.inProgress || 0}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* City insights table */}
+                {cityInsights.length > 0 && (
+                  <div className="border-t border-gray-100 pt-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-sm font-semibold text-gray-800">
+                        City Performance (Top 10 by hired drivers)
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Conversion = hired ÷ total applications, and hired ÷ completed
+                      </p>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-gray-50">
+                            <TableHead className="text-xs font-semibold text-gray-700">
+                              City
+                            </TableHead>
+                            <TableHead className="text-xs font-semibold text-gray-700 text-right">
+                              Total
+                            </TableHead>
+                            <TableHead className="text-xs font-semibold text-gray-700 text-right">
+                              Completed
+                            </TableHead>
+                            <TableHead className="text-xs font-semibold text-gray-700 text-right">
+                              Hired
+                            </TableHead>
+                            <TableHead className="text-xs font-semibold text-gray-700 text-right">
+                              Rejected
+                            </TableHead>
+                            <TableHead className="text-xs font-semibold text-gray-700 text-right">
+                              Conversion
+                            </TableHead>
+                            <TableHead className="text-xs font-semibold text-gray-700 text-right">
+                              Conv. vs Completed
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {cityInsights.slice(0, 10).map((city) => (
+                            <TableRow key={city.city}>
+                              <TableCell className="text-sm font-medium">
+                                {city.city}
+                              </TableCell>
+                              <TableCell className="text-sm text-right">
+                                {city.total}
+                              </TableCell>
+                              <TableCell className="text-sm text-right">
+                                {city.completed}
+                              </TableCell>
+                              <TableCell className="text-sm text-right text-green-700">
+                                {city.hired}
+                              </TableCell>
+                              <TableCell className="text-sm text-right text-red-600">
+                                {city.rejected}
+                              </TableCell>
+                              <TableCell className="text-sm text-right">
+                                {city.conversionRate}%
+                              </TableCell>
+                              <TableCell className="text-sm text-right">
+                                {city.completedConversionRate}%
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+        {/* Applications Tab */}
 
           {/* Applications Tab */}
           <TabsContent value="applications" className="space-y-6 mt-6">
@@ -441,6 +727,7 @@ export default function AdminDashboard() {
                       <SelectContent>
                         <SelectItem value="all">All Statuses</SelectItem>
                         <SelectItem value="pending">Pending Review</SelectItem>
+                        <SelectItem value="on_hold">On Hold</SelectItem>
                         <SelectItem value="approved">Approved</SelectItem>
                         <SelectItem value="hired">Hired</SelectItem>
                         <SelectItem value="rejected">Rejected</SelectItem>
@@ -521,7 +808,11 @@ export default function AdminDashboard() {
                       )}
                       {statusFilter !== "all" && (
                         <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-0 px-3 py-1 rounded-full">
-                          Status: {statusFilter === "pending" ? "Pending Review" : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
+                          Status: {statusFilter === "pending"
+                            ? "Pending Review"
+                            : statusFilter === "on_hold"
+                              ? "On Hold"
+                              : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
                           <button
                             onClick={() => setStatusFilter("all")}
                             className="ml-2 hover:text-blue-900 transition-colors inline-flex items-center"

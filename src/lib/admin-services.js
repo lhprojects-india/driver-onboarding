@@ -708,6 +708,7 @@ export const adminServices = {
       const stats = {
         total: applications.length,
         pending: applications.filter(app => !app.status || app.status === 'pending').length,
+        onHold: applications.filter(app => app.status === 'on_hold').length,
         approved: applications.filter(app => app.status === 'approved').length,
         hired: applications.filter(app => app.status === 'hired').length,
         rejected: applications.filter(app => app.status === 'rejected').length,
@@ -721,6 +722,7 @@ export const adminServices = {
       return {
         total: 0,
         pending: 0,
+        onHold: 0,
         approved: 0,
         hired: 0,
         rejected: 0,
