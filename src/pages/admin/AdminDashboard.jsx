@@ -111,7 +111,8 @@ export default function AdminDashboard() {
 
       // Filter by accessible cities if restricted
       if (currentUser?.accessibleCities?.length > 0 && adminRole !== 'super_admin') {
-        applicationsData = applicationsData.filter(app => currentUser.accessibleCities.includes(app.city));
+        const accessibleCitiesLower = currentUser.accessibleCities.map(c => c.toLowerCase());
+        applicationsData = applicationsData.filter(app => app.city && accessibleCitiesLower.includes(app.city.toLowerCase()));
 
         // Recalculate stats from filtered applications
         statsData = {
@@ -304,15 +305,15 @@ export default function AdminDashboard() {
   })();
 
   const STATUS_COLORS = {
-    Pending: "#ffcd6d", // Brand-yellow
-    "On Hold": "#f97316",
+    Pending: "#FFD06D", // Brand-yellow
+    "On Hold": "#FFB55D", // Brand-shadeYellow (replacing orange)
     Approved: "#04B4A8", // Brand-shadeTeal
     Hired: "#202B93", // Brand-shadeBlue
-    Rejected: "#ED738C", // Brand-shadePink
+    Rejected: "#EF8EA2", // Brand-pink (using pink for rejected/destructive)
     Withdrawn: "#6b7280",
   };
 
-  const PIE_COLORS = ["#0890F1", "#2FCCC0", "#FFD06D", "#ED738C", "#202B93"];
+  const PIE_COLORS = ["#0890F1", "#2FCCC0", "#FFD06D", "#EF8EA2", "#202B93"];
 
   // Count active filters
   const activeFiltersCount = [
@@ -365,7 +366,7 @@ export default function AdminDashboard() {
       on_hold: {
         variant: "outline",
         icon: PauseCircle,
-        className: "border-orange-200 text-orange-700 bg-orange-50",
+        className: "border-brand-yellow text-brand-shadeYellow bg-brand-lightYellow",
         label: "On Hold",
       },
     };
@@ -536,14 +537,14 @@ export default function AdminDashboard() {
 
             <div className="flex items-center gap-3 w-full sm:w-auto bg-gray-50 p-1.5 rounded-full border border-gray-100">
               <div className="hidden sm:flex items-center gap-2 px-3">
-                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+                <div className="h-2 w-2 rounded-full bg-brand-teal animate-pulse"></div>
                 <span className="text-sm font-medium text-gray-600 truncate max-w-[150px]">{currentUser?.email}</span>
               </div>
               <Button variant="ghost" size="sm" onClick={loadData} className="shrink-0 rounded-full h-8 w-8 p-0 hover:bg-white hover:shadow-sm">
                 <RefreshCw className="h-4 w-4 text-gray-600" />
                 <span className="sr-only">Refresh</span>
               </Button>
-              <Button variant="ghost" size="sm" onClick={signOut} className="shrink-0 rounded-full h-8 w-8 p-0 hover:bg-red-50 text-gray-500 hover:text-red-500 hover:shadow-sm">
+              <Button variant="ghost" size="sm" onClick={signOut} className="shrink-0 rounded-full h-8 w-8 p-0 hover:bg-brand-lightPink text-gray-500 hover:text-brand-pink hover:shadow-sm">
                 <LogOut className="h-4 w-4" />
                 <span className="sr-only">Sign out</span>
               </Button>
@@ -590,7 +591,7 @@ export default function AdminDashboard() {
 
           <Card className="relative overflow-hidden border-0 shadow-sm hover:shadow-md transition-all duration-300 group">
             <div className="absolute top-0 left-0 w-1 h-full bg-brand-blue"></div>
-            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-indigo-100 group-hover:bg-indigo-200 transition-colors"></div>
+            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-brand-lightBlue/30 group-hover:bg-brand-lightBlue/50 transition-colors"></div>
             <CardHeader className="pb-2 relative z-10">
               <CardTitle className="text-sm font-medium text-gray-600">Hired</CardTitle>
             </CardHeader>
@@ -601,12 +602,12 @@ export default function AdminDashboard() {
 
           <Card className="relative overflow-hidden border-0 shadow-sm hover:shadow-md transition-all duration-300 group">
             <div className="absolute top-0 left-0 w-1 h-full bg-brand-teal"></div>
-            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-emerald-100 group-hover:bg-emerald-200 transition-colors"></div>
+            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-brand-lightTeal/30 group-hover:bg-brand-lightTeal/50 transition-colors"></div>
             <CardHeader className="pb-2 relative z-10">
               <CardTitle className="text-sm font-medium text-gray-600">Completed</CardTitle>
             </CardHeader>
             <CardContent className="relative z-10">
-              <div className="text-3xl font-bold text-teal-700 group-hover:scale-105 transition-transform origin-left">{stats.completed || 0}</div>
+              <div className="text-3xl font-bold text-brand-shadeTeal group-hover:scale-105 transition-transform origin-left">{stats.completed || 0}</div>
             </CardContent>
           </Card>
 
@@ -803,10 +804,10 @@ export default function AdminDashboard() {
                               <TableCell className="text-sm text-right">
                                 {city.completed}
                               </TableCell>
-                              <TableCell className="text-sm text-right text-green-700">
+                              <TableCell className="text-sm text-right text-brand-shadeTeal">
                                 {city.hired}
                               </TableCell>
-                              <TableCell className="text-sm text-right text-red-600">
+                              <TableCell className="text-sm text-right text-brand-pink">
                                 {city.rejected}
                               </TableCell>
                               <TableCell className="text-sm text-right">
@@ -1040,7 +1041,7 @@ export default function AdminDashboard() {
                     Filtered applications: <span className="font-semibold">{filteredApplications.length}</span> | Total applications: <span className="font-semibold">{applications.length}</span>
                   </p>
                   {filteredApplications.filter(app => app.onboardingStatus === 'completed' && (!app.status || app.status === 'pending')).length > 0 && (
-                    <Badge className="bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-100">
+                    <Badge className="bg-brand-lightYellow text-brand-shadeYellow border-brand-yellow hover:bg-brand-lightYellow">
                       <Clock className="h-3 w-3 mr-1" />
                       {filteredApplications.filter(app => app.onboardingStatus === 'completed' && (!app.status || app.status === 'pending')).length} completed application{filteredApplications.filter(app => app.onboardingStatus === 'completed' && (!app.status || app.status === 'pending')).length !== 1 ? 's' : ''} awaiting review
                     </Badge>
@@ -1348,7 +1349,7 @@ export default function AdminDashboard() {
                                     {app.onboardingStatus === 'completed' && (adminRole === 'super_admin' || adminRole === 'app_admin') && (
                                       <DropdownMenuItem
                                         onClick={() => setApplicationToReset(app)}
-                                        className="text-orange-600 focus:text-orange-600 focus:bg-orange-50"
+                                        className="text-brand-shadeYellow focus:text-brand-shadeYellow focus:bg-brand-lightYellow"
                                       >
                                         <RefreshCw className="mr-2 h-3.5 w-3.5" />
                                         Reset Progress
@@ -1358,7 +1359,7 @@ export default function AdminDashboard() {
                                     {(adminRole === 'super_admin' || adminRole === 'app_admin') && (
                                       <DropdownMenuItem
                                         onClick={() => setApplicationToDelete(app)}
-                                        className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                        className="text-brand-pink focus:text-brand-pink focus:bg-brand-lightPink"
                                       >
                                         <Trash2 className="mr-2 h-3.5 w-3.5" />
                                         Delete
@@ -1515,12 +1516,12 @@ export default function AdminDashboard() {
                 </DialogDescription>
               </div>
               {selectedReport?.reportId ? (
-                <Badge className="bg-green-100 text-green-800 border-green-200">
+                <Badge className="bg-brand-lightTeal text-brand-shadeTeal border-brand-teal">
                   <CheckCircle className="h-3 w-3 mr-1" />
                   Complete Report
                 </Badge>
               ) : (
-                <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200">
+                <Badge variant="secondary" className="bg-brand-lightBlue text-brand-shadeBlue border-brand-blue">
                   <Eye className="h-3 w-3 mr-1" />
                   Data Snapshot
                 </Badge>
@@ -1531,10 +1532,10 @@ export default function AdminDashboard() {
           {selectedReport && (
             <div className="space-y-6 mt-4">
               {/* Application Summary */}
-              <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+              <Card className="bg-gradient-to-r from-brand-lightBlue to-white border-brand-lightBlue">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <Users className="h-5 w-5 text-blue-600" />
+                    <Users className="h-5 w-5 text-brand-blue" />
                     Application Summary
                   </CardTitle>
                 </CardHeader>
@@ -1605,6 +1606,7 @@ export default function AdminDashboard() {
                         <TableHeader>
                           <TableRow className="bg-gray-50">
                             <TableHead className="font-semibold">Day</TableHead>
+                            <TableHead className="font-semibold text-center">AM</TableHead>
                             <TableHead className="font-semibold text-center">PM</TableHead>
                             <TableHead className="font-semibold text-center">NGT</TableHead>
                           </TableRow>
@@ -1615,6 +1617,19 @@ export default function AdminDashboard() {
                             return (
                               <TableRow key={day} className="hover:bg-gray-50">
                                 <TableCell className="font-medium capitalize">{day}</TableCell>
+                                <TableCell className="text-center">
+                                  {slots.morning ? (
+                                    <span className="inline-flex items-center gap-1 text-green-600 font-medium">
+                                      <CheckCircle className="h-4 w-4" />
+                                      Yes
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 text-red-600">
+                                      <XCircle className="h-4 w-4" />
+                                      No
+                                    </span>
+                                  )}
+                                </TableCell>
                                 <TableCell className="text-center">
                                   {slots.noon ? (
                                     <span className="inline-flex items-center gap-1 text-green-600 font-medium">

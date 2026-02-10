@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { acknowledgementServices, feeStructureServices } from "@/lib/firebase-services";
 import { getVehicleTypeFromMOT } from "@/lib/utils";
+import { pageContent } from "@/data/page-content";
 import PageLayout from "@/components/PageLayout";
 import Button from "@/components/Button";
 import { Button as UIButton } from "@/components/ui/button";
@@ -37,7 +38,7 @@ const CancellationPolicy = () => {
 
   // Cities that should not show the 10% block release fee line
   const citiesWithoutReleaseFee = ['Birmingham', 'Manchester', 'Dublin', 'Copenhagen', 'Amsterdam', 'Edinburgh', 'Miami', 'Boston', 'Chicago'];
-  const shouldHideReleaseFee = city && citiesWithoutReleaseFee.includes(city);
+  const shouldHideReleaseFee = city && citiesWithoutReleaseFee.some(c => c.toLowerCase() === city.trim().toLowerCase());
 
   // Fetch currency based on user's city
   useEffect(() => {
@@ -162,7 +163,7 @@ const CancellationPolicy = () => {
     <PageLayout compact title="">
       <div className="w-full flex flex-col items-center">
         <h2 className="text-center text-3xl font-bold mb-6 animate-slide-down">
-          Block Cancellation Policy
+          {pageContent.cancellationPolicy.title}
         </h2>
 
         <div className="w-full max-w-2xl animate-fade-in">
@@ -170,50 +171,60 @@ const CancellationPolicy = () => {
             <div className="text-left space-y-4 text-sm text-gray-900">
               <div className="space-y-4">
                 <div>
-                  <p className="font-semibold mb-2">48-Hour Rule</p>
-                  <p className="ml-4">
-                    You must release your block at least 48 hours before the start time to avoid being charged the full block fee as a cancellation fee.
-                  </p>
-                  <p className="pt-2 ml-4 text-sm italic">
-                    Note: Please be informed that you can avoid the cancellation fee by providing a suitable substitute.
-                  </p>
-                </div>
-
-                <div>
-                  <p className="font-semibold mb-2">Fees</p>
-                  {!shouldHideReleaseFee && (
+                  <p className="font-semibold mb-2">{pageContent.cancellationPolicy.rules.fortyEightHour.title}</p>
+                  {shouldHideReleaseFee ? (
                     <p className="ml-4">
-                      Release with 48+ hours' notice: 10% block release fee will be charged
-
+                      {pageContent.cancellationPolicy.rules.fortyEightHour.noReleaseFee}
+                    </p>
+                  ) : (
+                    <p className="ml-4">
+                      {pageContent.cancellationPolicy.rules.fortyEightHour.standard}
                     </p>
                   )}
-                  <p className="ml-4">
-                    Release with less than 48 hours' notice: Full block fee charged as a cancellation fee
+                  <p className="pt-2 ml-4 text-sm italic">
+                    {pageContent.cancellationPolicy.rules.fortyEightHour.note}
                   </p>
                 </div>
 
+                {!shouldHideReleaseFee && (
+                  <div>
+                    <p className="font-semibold mb-2">{pageContent.cancellationPolicy.rules.fees.title}</p>
+                    <p className="ml-4">{pageContent.cancellationPolicy.rules.fees.standardRelease}</p>
+                    <p className="ml-4">
+                      {pageContent.cancellationPolicy.rules.fees.standardCancellation}
+                    </p>
+                  </div>
+                )}
+
                 <div>
-                  <p className="font-semibold mb-2">Example</p>
+                  <p className="font-semibold mb-2">{pageContent.cancellationPolicy.rules.example.title}</p>
                   <p className="ml-4 mb-1">
-                    Block Date: 16th January at 5:00 PM ({currency}100)
+                    {pageContent.cancellationPolicy.rules.example.blockDate.replace('{currency}', currency)}
                   </p>
-                  {!shouldHideReleaseFee && (
-                    <p className="ml-4 mb-1">
-                      Released before 14th January, 5:00 PM → {currency}10 charged as block release fee
+                  {shouldHideReleaseFee ? (
+                    <p className="ml-4">
+                      {pageContent.cancellationPolicy.rules.example.noReleaseFee.releasedAfter.replace('{currency}', currency)}
                     </p>
+                  ) : (
+                    <>
+                      <p className="ml-4 mb-1">
+                        {pageContent.cancellationPolicy.rules.example.standard.releasedBefore.replace('{currency}', currency)}
+                      </p>
+                      <p className="ml-4">
+                        {pageContent.cancellationPolicy.rules.example.standard.releasedAfter.replace('{currency}', currency)}
+                      </p>
+                    </>
                   )}
-                  <p className="ml-4">
-                    Released after 14th January, 5:00 PM → {currency}100 charged as cancellation fee
-                  </p>
                 </div>
 
                 <div>
-                  <p className="font-semibold mb-2">Why This Matters</p>
+                  <p className="font-semibold mb-2">{pageContent.cancellationPolicy.rules.whyMatters.title}</p>
                   <p className="ml-4">
-                    Releasing blocks early helps the team reassign the slot smoothly, ensuring customers receive consistent service, and it helps everyone avoid unnecessary delays.
+                    {pageContent.cancellationPolicy.rules.whyMatters.p1}
                   </p>
                   <p className="pt-2 ml-4">
-                    Most partner drivers hold blocks in advance and release them close to the scheduled date, which limits availability for others. The 10% fee helps discourage last-minute releases and ensures fair access to blocks for all drivers.
+                    {pageContent.cancellationPolicy.rules.whyMatters.p2}
+                    {!shouldHideReleaseFee && pageContent.cancellationPolicy.rules.whyMatters.p2SuffixStandard}
                   </p>
                 </div>
               </div>

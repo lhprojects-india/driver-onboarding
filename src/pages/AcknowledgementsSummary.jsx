@@ -24,9 +24,9 @@ const AcknowledgementsSummary = () => {
       title: 'Liability Policy',
       route: '/liabilities',
       isAcknowledged: () => {
-        return currentUser?.progress_liabilities?.confirmed || 
-               currentUser?.acknowledgedLiabilities || 
-               currentUser?.liabilitiesAcknowledged;
+        return currentUser?.progress_liabilities?.confirmed ||
+          currentUser?.acknowledgedLiabilities ||
+          currentUser?.liabilitiesAcknowledged;
       }
     },
     {
@@ -40,8 +40,8 @@ const AcknowledgementsSummary = () => {
       title: 'Fee Structure',
       route: '/fee-structure',
       isAcknowledged: () => {
-        return currentUser?.feeStructureAcknowledged || 
-               currentUser?.acknowledgedFeeStructure;
+        return currentUser?.feeStructureAcknowledged ||
+          currentUser?.acknowledgedFeeStructure;
       }
     },
     {
@@ -49,8 +49,8 @@ const AcknowledgementsSummary = () => {
       title: 'Payment Cycle & Block Schedule',
       route: '/payment-cycle-schedule',
       isAcknowledged: () => {
-        return currentUser?.paymentCycleScheduleAcknowledged || 
-               currentUser?.acknowledgedPaymentCycleSchedule;
+        return currentUser?.paymentCycleScheduleAcknowledged ||
+          currentUser?.acknowledgedPaymentCycleSchedule;
       }
     },
     {
@@ -64,8 +64,8 @@ const AcknowledgementsSummary = () => {
       title: 'Cancellation Policy',
       route: '/cancellation-policy',
       isAcknowledged: () => {
-        return currentUser?.cancellationPolicyAcknowledged || 
-               currentUser?.acknowledgedCancellationPolicy;
+        return currentUser?.cancellationPolicyAcknowledged ||
+          currentUser?.acknowledgedCancellationPolicy;
       }
     }
   ];
@@ -116,10 +116,10 @@ const AcknowledgementsSummary = () => {
               Review Your Acknowledgements
             </h2>
             <p className="text-lg text-muted-foreground mb-2">
-            After completing this application, you will move on to an automated interview.
+              After completing this application, one of our team members will call you to confirm your details and answer any questions you may have.
             </p>
             <p className="text-base text-muted-foreground mb-6">
-            It will include questions based on the policies you've reviewed. If you want to review anything, now is a good time.
+              If you want to review anything, now is a good time.
             </p>
           </div>
 
@@ -134,15 +134,14 @@ const AcknowledgementsSummary = () => {
                   return (
                     <div
                       key={ack.id}
-                      className={`flex items-center justify-between p-4 border rounded-lg ${
-                        isCompleted ? 'bg-transparent border-green-300' : 'bg-transparent border-gray-300'
-                      }`}
+                      className={`flex items-center justify-between p-4 border rounded-lg ${isCompleted ? 'bg-transparent border-brand-teal' : 'bg-transparent border-gray-300'
+                        }`}
                     >
                       <div className="flex items-center space-x-3">
                         {isCompleted && (
-                          <CheckCircle2 className="h-5 w-5 text-green-600" />
+                          <CheckCircle2 className="h-5 w-5 text-brand-shadeTeal" />
                         )}
-                        <span className={`font-medium ${isCompleted ? 'text-green-900' : 'text-gray-700'}`}>
+                        <span className={`font-medium ${isCompleted ? 'text-brand-shadeTeal' : 'text-gray-700'}`}>
                           {ack.title}
                         </span>
                       </div>
@@ -166,11 +165,11 @@ const AcknowledgementsSummary = () => {
             </CardContent>
           </Card>
 
-          <Card className="border-blue-200 bg-blue-50/50">
+          <Card className="border-brand-lightBlue bg-brand-lightBlue/50">
             <CardContent className="p-6">
               <div className="text-base font-medium">
                 <CheckboxWithLabel
-                  label="I understand all the policies and am ready for the AI call"
+                  label="I understand all the policies."
                   checked={allPoliciesUnderstood}
                   onChange={setAllPoliciesUnderstood}
                 />

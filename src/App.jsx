@@ -37,7 +37,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <BrowserRouter>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           {/* Driver routes - AuthProvider only, AdminAuthProvider is disabled */}
           <AuthProvider>
             {/* AdminAuthProvider is nested but will disable itself on non-admin routes */}
@@ -45,38 +45,38 @@ function App() {
               <Toaster />
               <Sonner />
               <Routes>
-                  {/* Driver Onboarding Routes */}
-                  <Route path="/" element={<Welcome />} />
-                  <Route path="/verify" element={<Verify />} />
-                  <Route path="/confirm-details" element={<ConfirmDetails />} />
-                  <Route path="/introduction" element={<Introduction />} />
-                  <Route path="/about" element={<About />} />
-                  <Route path="/role" element={<Role />} />
-                  <Route path="/availability" element={<Availability />} />
-                  <Route path="/facility-locations" element={<FacilityLocations />} />
-                  <Route path="/liabilities" element={<Liabilities />} />
-                  <Route path="/smoking-fitness-check" element={<SmokingFitnessCheck />} />
-                  <Route path="/blocks-classification" element={<BlocksClassification />} />
-                  <Route path="/fee-structure" element={<FeeStructure />} />
-                  <Route path="/payment-cycle-schedule" element={<PaymentCycleSchedule />} />
-                  <Route path="/how-route-works" element={<HowRouteWorks />} />
-                  <Route path="/cancellation-policy" element={<CancellationPolicy />} />
-                  <Route path="/acknowledgements-summary" element={<AcknowledgementsSummary />} />
-                  <Route path="/thank-you" element={<ThankYou />} />
-                  
-                  {/* Admin Routes */}
-                  <Route path="/admin/login" element={<AdminLogin />} />
-                  <Route 
-                    path="/admin" 
-                    element={
-                      <AdminProtectedRoute>
-                        <AdminDashboard />
-                      </AdminProtectedRoute>
-                    } 
-                  />
-                  
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
+                {/* Driver Onboarding Routes */}
+                <Route path="/" element={<Welcome />} />
+                <Route path="/verify" element={<Verify />} />
+                <Route path="/confirm-details" element={<ConfirmDetails />} />
+                <Route path="/introduction" element={<Introduction />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/role" element={<Role />} />
+                <Route path="/availability" element={<Availability />} />
+                <Route path="/facility-locations" element={<FacilityLocations />} />
+                <Route path="/liabilities" element={<Liabilities />} />
+                <Route path="/smoking-fitness-check" element={<SmokingFitnessCheck />} />
+                <Route path="/blocks-classification" element={<BlocksClassification />} />
+                <Route path="/fee-structure" element={<FeeStructure />} />
+                <Route path="/payment-cycle-schedule" element={<PaymentCycleSchedule />} />
+                <Route path="/how-route-works" element={<HowRouteWorks />} />
+                <Route path="/cancellation-policy" element={<CancellationPolicy />} />
+                <Route path="/acknowledgements-summary" element={<AcknowledgementsSummary />} />
+                <Route path="/thank-you" element={<ThankYou />} />
+
+                {/* Admin Routes */}
+                <Route path="/admin/login" element={<AdminLogin />} />
+                <Route
+                  path="/admin"
+                  element={
+                    <AdminProtectedRoute>
+                      <AdminDashboard />
+                    </AdminProtectedRoute>
+                  }
+                />
+
+                <Route path="*" element={<NotFound />} />
+              </Routes>
             </AdminAuthProvider>
           </AuthProvider>
         </BrowserRouter>

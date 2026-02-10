@@ -22,17 +22,17 @@ const ThankYou = () => {
           <h2 className="text-2xl font-bold mb-4 md:mb-8">
             Thank you for completing the welcome section of the onboarding stage!
           </h2>
-          
+
           <p>
-          You will receive the link for the virtual call shortly.
+            Please wait for a call from our team.
           </p>
-          
+
           <p className="mt-6 md:mt-12">
             For any further queries or concerns, please do not hesitate to reach out to scout@laundryheap.com
           </p>
         </div>
-        
-        <Button 
+
+        <Button
           onClick={handleEndSession}
           className="w-full max-w-xs mt-6 md:mt-12"
         >

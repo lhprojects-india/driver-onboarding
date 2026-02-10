@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { feeStructureServices, acknowledgementServices } from "@/lib/firebase-services";
 import { getVehicleTypeFromMOT } from "@/lib/utils";
+import { pageContent } from "@/data/page-content";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { useMinimumReadTime } from "@/hooks/useMinimumReadTime";
 import {
@@ -269,27 +270,15 @@ const FeeStructure = () => {
         <div className="grid w-full max-w-4xl gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>How your pay works</CardTitle>
+              <CardTitle>{pageContent.feeStructure.howPayWorks.title}</CardTitle>
               <CardDescription>
-                Clear minimums, predictable extras, and transparent examples.
+                {pageContent.feeStructure.howPayWorks.description}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p>
-                Every delivery block (3, 4, or 5 hours) comes with a <strong>guaranteed minimum fee</strong>.
-              </p>
-              <p>
-                Even if there are fewer tasks on a given day, you&apos;ll still receive this full minimum amount.
-              </p>
-              <p>
-                If you complete more than the included number of tasks, you&apos;ll earn extra pay for each additional task — the busier it is, the more you earn.
-              </p>
-              <p className="font-medium">
-                Only successfully completed tasks count toward your pay. Tasks that are failed or not delivered/picked up are not paid.
-              </p>
-              <p className="font-medium">
-                Please be informed that the fee mentioned is inclusive of the mileage.
-              </p>
+              {pageContent.feeStructure.howPayWorks.points.map((point, i) => (
+                <p key={i} dangerouslySetInnerHTML={{ __html: point }} />
+              ))}
             </CardContent>
           </Card>
 
@@ -298,20 +287,20 @@ const FeeStructure = () => {
           {allBlocks.length > 0 ? (
             <>
               <div className="col-span-full">
-                <h3 className="text-xl font-semibold mb-4">Examples by Density</h3>
+                <h3 className="text-xl font-semibold mb-4">{pageContent.feeStructure.examples.title}</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  See how minimum + extra tasks add up for different route densities.
+                  {pageContent.feeStructure.examples.subtitle}
                 </p>
               </div>
 
               {allBlocks.map((block, index) => {
                 const example = calculateExample(block);
                 const densityColors = {
-                  'low': 'border-blue-200',
-                  'medium': 'border-yellow-200',
-                  'high': 'border-green-200'
+                  'low': 'border-brand-lightBlue',
+                  'medium': 'border-brand-lightYellow',
+                  'high': 'border-brand-lightTeal'
                 };
-                const borderColor = densityColors[block.density] || 'border-blue-200';
+                const borderColor = densityColors[block.density] || 'border-brand-lightBlue';
 
                 return (
                   <Card key={index} className={borderColor}>
@@ -319,30 +308,34 @@ const FeeStructure = () => {
                       <CardTitle className="capitalize">
                         {block.density ? `${block.density} Density` : 'Standard'} - {block.shiftLength}-hour block
                       </CardTitle>
-                      <CardDescription>See how minimum + extra tasks add up.</CardDescription>
+                      <CardDescription>{pageContent.feeStructure.examples.subtitle}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <div className="rounded-md border p-4">
-                          <div className="text-sm text-muted-foreground">Minimum fee</div>
+                          <div className="text-sm text-muted-foreground">{pageContent.feeStructure.examples.labels.minimumFee}</div>
                           <div className="text-2xl font-semibold">{currency}{block.minimumFee}</div>
                         </div>
                         <div className="rounded-md border p-4">
-                          <div className="text-sm text-muted-foreground">Included tasks</div>
+                          <div className="text-sm text-muted-foreground">{pageContent.feeStructure.examples.labels.includedTasks}</div>
                           <div className="text-2xl font-semibold">{block.includedTasks}</div>
                         </div>
                         <div className="rounded-md border p-4">
-                          <div className="text-sm text-muted-foreground">Extra per task</div>
+                          <div className="text-sm text-muted-foreground">{pageContent.feeStructure.examples.labels.extraPerTask}</div>
                           <div className="text-2xl font-semibold">{currency}{block.additionalTaskFee}</div>
                         </div>
                       </div>
                       {example && (
                         <div className="rounded-md bg-muted border p-4">
-                          <p>
-                            If you complete <strong>{example.totalTasks} tasks</strong> ({example.extraTasks} extra × {currency}{block.additionalTaskFee}), your total becomes
-                            {" "}
-                            <strong className="text-yellow-200">{currency}{example.totalEarnings}</strong>.
-                          </p>
+                          <p dangerouslySetInnerHTML={{
+                            __html: pageContent.feeStructure.examples.labels.calculation
+                              .replace('{totalTasks}', example.totalTasks)
+                              .replace('{extraTasks}', example.extraTasks)
+                              .replace('{currency}', currency)
+                              .replace('{additionalTaskFee}', block.additionalTaskFee)
+                              .replace('{currency}', currency)
+                              .replace('{totalEarnings}', example.totalEarnings)
+                          }} />
                         </div>
                       )}
                     </CardContent>
@@ -354,29 +347,27 @@ const FeeStructure = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>What to expect</CardTitle>
+              <CardTitle>{pageContent.feeStructure.whatToExpect.title}</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3">
               <div className="rounded-md border p-4">
-                <span className="font-medium">Guaranteed minimum:</span> You&apos;re always paid for the block you commit to.
+                <span className="font-medium">{pageContent.feeStructure.whatToExpect.guaranteed.label}</span> {pageContent.feeStructure.whatToExpect.guaranteed.text}
               </div>
               <div className="rounded-md border p-4">
-                <span className="font-medium">Extra earnings:</span> More tasks = more pay.
+                <span className="font-medium">{pageContent.feeStructure.whatToExpect.extra.label}</span> {pageContent.feeStructure.whatToExpect.extra.text}
               </div>
               <div className="rounded-md border p-4">
-                <span className="font-medium">Average hourly earnings:</span> {cleanEarningsString(feeStructures?.averageHourlyEarnings) || '£14–£20'}
+                <span className="font-medium">{pageContent.feeStructure.whatToExpect.hourly.label}</span> {cleanEarningsString(feeStructures?.averageHourlyEarnings) || '£14–£20'}
               </div>
               <div className="rounded-md border p-4">
-                <span className="font-medium">Average per-task earnings:</span> {cleanEarningsString(feeStructures?.averagePerTaskEarnings) || '£4.50–£6.50'}
+                <span className="font-medium">{pageContent.feeStructure.whatToExpect.perTask.label}</span> {cleanEarningsString(feeStructures?.averagePerTaskEarnings) || '£4.50–£6.50'}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-green-300">
+          <Card className="border-brand-teal">
             <CardContent className="p-6">
-              <p>
-                💡 You&apos;re always covered with a <strong>guaranteed minimum fee</strong> — and any extra work means extra income on top of that.
-              </p>
+              <p dangerouslySetInnerHTML={{ __html: pageContent.feeStructure.footer }} />
             </CardContent>
           </Card>
         </div>
@@ -387,7 +378,7 @@ const FeeStructure = () => {
               <p className="text-sm text-muted-foreground mb-2">Want to revisit the block classes?</p>
               <button
                 onClick={handleBackToBlocks}
-                className="text-blue-600 hover:text-blue-800 underline text-sm font-medium"
+                className="text-brand-blue hover:text-brand-shadeBlue underline text-sm font-medium"
                 disabled={isLoading}
               >
                 Back to Block Classification

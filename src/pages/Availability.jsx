@@ -13,13 +13,13 @@ const Availability = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   const [availability, setAvailability] = useState({
-    Mondays: { noon: false, evening: false },
-    Tuesdays: { noon: false, evening: false },
-    Wednesdays: { noon: false, evening: false },
-    Thursdays: { noon: false, evening: false },
-    Fridays: { noon: false, evening: false },
-    Saturdays: { noon: false, evening: false },
-    Sundays: { noon: false, evening: false }
+    Mondays: { morning: false, noon: false, evening: false },
+    Tuesdays: { morning: false, noon: false, evening: false },
+    Wednesdays: { morning: false, noon: false, evening: false },
+    Thursdays: { morning: false, noon: false, evening: false },
+    Fridays: { morning: false, noon: false, evening: false },
+    Saturdays: { morning: false, noon: false, evening: false },
+    Sundays: { morning: false, noon: false, evening: false }
   });
 
   // Load existing availability data
@@ -50,7 +50,7 @@ const Availability = () => {
   // Check if at least one availability slot is selected
   const hasAtLeastOneSelection = () => {
     return Object.values(availability).some(
-      (day) => day.noon === true || day.evening === true
+      (day) => day.morning === true || day.noon === true || day.evening === true
     );
   };
 
@@ -62,28 +62,28 @@ const Availability = () => {
         <h2 className="text-center text-3xl font-bold mb-6 animate-slide-down">
           Availability Check
         </h2>
-        
-        <div className="w-full max-w-md animate-fade-in">
+
+        <div className="w-full max-w-lg animate-fade-in">
           <p className="text-center mb-6">
-            We offer our blocks in 2 windows, one starting at 12 pm and the other starting at 5 pm. We are operational 7 days a week.
+            We offer our blocks in 3 windows: 8 AM - 12 PM, 12 PM - 5 PM, and 5 PM - 11 PM. We are operational 7 days a week.
           </p>
-          
+
           <p className="text-center mb-6">
             Please share your general availability by making the appropriate selections
           </p>
-          
-          <AvailabilityGrid 
+
+          <AvailabilityGrid
             availability={availability}
             onAvailabilityChange={handleAvailabilityChange}
           />
         </div>
-        
+
         {!hasAtLeastOneSelection() && (
           <p className="text-center text-sm text-red-500 mt-4">
             Please select at least one availability slot to continue
           </p>
         )}
-        
+
         <Button
           onClick={handleContinue}
           className="w-full max-w-xs mt-4 md:mt-8"

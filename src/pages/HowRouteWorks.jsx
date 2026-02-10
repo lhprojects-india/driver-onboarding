@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { pageContent } from "@/data/page-content";
 import PageLayout from "@/components/PageLayout";
 import Button from "@/components/Button";
 import { Button as UIButton } from "@/components/ui/button";
@@ -111,22 +112,18 @@ const HowRouteWorks = () => {
     <PageLayout compact title="">
       <div className="w-full flex flex-col items-center">
         <h2 className="text-center text-3xl font-bold mb-6 animate-slide-down">
-          How Route Works
+          {pageContent.howRouteWorks.title}
         </h2>
-        
+
         <div className="w-full max-w-md animate-fade-in">
           <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 max-h-[500px] overflow-y-auto mb-6">
             <div className="text-left space-y-4 text-sm text-gray-900">
-              <p>
-                Please note that routes are planned by our automated system, which considers several factors such as live traffic conditions, the time required to find parking, and the estimated time needed to meet the customer and complete each task. Based on these parameters, the system calculates the estimated time of arrival (ETA) for completing the route.
-              </p>
-              
-              <p>
-                As Laundryheap operates as an on-demand service, new orders may be assigned to you while you are already on your route. These additional tasks are automatically planned to fit within your booked block time. Therefore, you will not have the option to decline any tasks added to your route.
-              </p>
+              {pageContent.howRouteWorks.paragraphs.map((paragraph, index) => (
+                <p key={index}>{paragraph}</p>
+              ))}
             </div>
           </div>
-          
+
           {searchParams.get('from') !== 'summary' && (
             <CheckboxWithLabel
               label="I understand the policy"
@@ -135,7 +132,7 @@ const HowRouteWorks = () => {
             />
           )}
         </div>
-        
+
         {searchParams.get('from') !== 'summary' && !canProceed && (
           <div className="w-full max-w-md text-center mt-4">
             <p className="text-sm text-muted-foreground">
@@ -143,7 +140,7 @@ const HowRouteWorks = () => {
             </p>
           </div>
         )}
-        
+
         <div className="w-full flex flex-col items-center space-y-4 mt-6">
           {searchParams.get('from') === 'summary' ? (
             <UIButton

@@ -35,8 +35,10 @@ export default function FacilityManager() {
       // Filter by accessible cities if restricted
       if (currentUser?.accessibleCities?.length > 0 && adminRole !== 'super_admin') {
         const filtered = {};
+        const accessibleCitiesLower = currentUser.accessibleCities.map(c => c.toLowerCase());
+
         Object.keys(facilitiesData).forEach(city => {
-          if (currentUser.accessibleCities.includes(city)) {
+          if (accessibleCitiesLower.includes(city.toLowerCase())) {
             filtered[city] = facilitiesData[city];
           }
         });
@@ -178,12 +180,12 @@ export default function FacilityManager() {
               <h2 className="text-xl font-semibold text-gray-900">Facility Locations</h2>
               <p className="text-sm text-gray-600 mt-1">Manage facility locations for different cities</p>
             </div>
-            {(adminRole === 'super_admin' || adminRole === 'app_admin') && (
+            {(adminRole === 'super_admin' || adminRole === 'app_admin' || adminRole === 'admin_fleet') && (
               <div className="flex gap-2">
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button onClick={handleCreateNew} className="bg-brand-blue hover:bg-brand-shadeBlue">
-                      <Save className="h-4 w-4 mr-2" />
+                    <Button onClick={handleCreateNew} className="bg-blue-600 hover:bg-blue-700">
+                      <Plus className="h-4 w-4 mr-2" />
                       Add Facility
                     </Button>
                   </DialogTrigger>
@@ -232,7 +234,7 @@ export default function FacilityManager() {
                       <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                         Cancel
                       </Button>
-                      <Button onClick={handleSave} className="bg-brand-blue hover:bg-brand-shadeBlue">
+                      <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">
                         <Save className="h-4 w-4 mr-2" />
                         {editingFacility ? 'Update' : 'Create'}
                       </Button>
@@ -273,7 +275,7 @@ export default function FacilityManager() {
                           </span>
                         </div>
                       </div>
-                      {(adminRole === 'super_admin' || adminRole === 'app_admin') && (
+                      {(adminRole === 'super_admin' || adminRole === 'app_admin' || adminRole === 'admin_fleet') && (
                         <div className="flex gap-2">
                           <Button
                             variant="outline"
@@ -285,7 +287,7 @@ export default function FacilityManager() {
                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="destructive" size="sm" className="bg-brand-pink hover:bg-brand-shadePink text-white">
+                              <Button variant="destructive" size="sm" className="bg-red-600 hover:bg-red-700">
                                 <Trash2 className="h-4 w-4 mr-1" />
                                 Delete
                               </Button>
@@ -302,7 +304,7 @@ export default function FacilityManager() {
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
                                   onClick={() => handleDelete(facility.id || facility.Facility, facility.facility || facility.Facility)}
-                                  className="bg-brand-pink hover:bg-brand-shadePink text-white"
+                                  className="bg-red-600 hover:bg-red-700"
                                 >
                                   Delete
                                 </AlertDialogAction>
@@ -330,4 +332,3 @@ export default function FacilityManager() {
     </div>
   );
 }
-

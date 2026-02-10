@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { acknowledgementServices } from "@/lib/firebase-services";
+import { pageContent } from "@/data/page-content";
 import PageLayout from "@/components/PageLayout";
 import Button from "@/components/Button";
 import { Button as UIButton } from "@/components/ui/button";
@@ -52,7 +53,7 @@ const Liabilities = () => {
 
       // Attempt server-side immutable acknowledgement
       const res = await acknowledgementServices.acknowledgeLiabilities();
-      
+
       // Always update local state regardless of which method was used
       // Liabilities always navigates to summary (whether from summary or normal flow)
       if (res.success) {
@@ -82,24 +83,18 @@ const Liabilities = () => {
     <PageLayout compact title="">
       <div className="w-full flex flex-col items-center">
         <h2 className="text-center text-3xl font-bold mb-6 animate-slide-down">
-          Liability policy (lost/damaged)
+          {pageContent.liabilities.title}
         </h2>
-        
+
         <div className="w-full max-w-md animate-fade-in">
           <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 max-h-[500px] overflow-y-auto mb-6">
             <div className="text-left space-y-4 text-sm text-gray-900">
-              <p>
-                Please note that if an order is lost or damaged while in your possession, you will be held responsible. For example, if an order is delivered to the wrong address, apartment, or customer and the items are lost, we may need to compensate the customer for the loss, and this cost will be passed on to you.
-              </p>
-              <p>
-                Similarly, if any items are stolen or go missing during your route, you will be liable for the compensation. In addition, if an item is damaged due to negligence on your part and compensation is required, the related cost will also be passed on to you.
-              </p>
-              <p>
-                Hence, we request all our partner drivers to be cautious while operating and to handle the orders with care to avoid any mishaps.
-              </p>
+              {pageContent.liabilities.paragraphs.map((paragraph, index) => (
+                <p key={index}>{paragraph}</p>
+              ))}
             </div>
           </div>
-          
+
           {searchParams.get('from') !== 'summary' && (
             <CheckboxWithLabel
               label="I understand the policy"
@@ -108,7 +103,7 @@ const Liabilities = () => {
             />
           )}
         </div>
-        
+
         {searchParams.get('from') !== 'summary' && !canProceed && (
           <div className="w-full max-w-md text-center mt-4">
             <p className="text-sm text-muted-foreground">
@@ -116,7 +111,7 @@ const Liabilities = () => {
             </p>
           </div>
         )}
-        
+
         <div className="w-full flex flex-col items-center space-y-4 mt-6">
           {searchParams.get('from') === 'summary' ? (
             <UIButton

@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../../components/ui/alert-dialog";
 import { useToast } from "../../hooks/use-toast";
 import { Plus, Edit, Trash2, Save, X, FileText } from "lucide-react";
+import { Skeleton } from "../../components/ui/skeleton";
 
 // Currency mapping: code -> symbol
 const CURRENCY_MAP = {
@@ -98,8 +99,10 @@ export default function FeeStructureManager() {
       // Filter by accessible cities if restricted
       if (currentUser?.accessibleCities?.length > 0 && adminRole !== 'super_admin') {
         const filtered = {};
+        const accessibleCitiesLower = currentUser.accessibleCities.map(c => c.toLowerCase());
+
         Object.keys(structures).forEach(city => {
-          if (currentUser.accessibleCities.includes(city)) {
+          if (accessibleCitiesLower.includes(city.toLowerCase())) {
             filtered[city] = structures[city];
           }
         });
@@ -455,10 +458,58 @@ export default function FeeStructureManager() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p>Loading fee structures...</p>
+      <div className="space-y-6">
+        <Card className="border-0 shadow-sm">
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <Skeleton className="h-7 w-48 mb-2" /> {/* Title */}
+                <Skeleton className="h-4 w-64" /> {/* Description */}
+              </div>
+              <Skeleton className="h-10 w-40" /> {/* Add Button */}
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <Card key={i} className="border-0 shadow-sm">
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <Skeleton className="h-6 w-32 mb-2" /> {/* City Name */}
+                    <Skeleton className="h-4 w-24" /> {/* Fee Type */}
+                  </div>
+                  <div className="flex gap-2">
+                    <Skeleton className="h-8 w-8 rounded-md" /> {/* Edit Button */}
+                    <Skeleton className="h-8 w-8 rounded-md" /> {/* Delete Button */}
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                  <div className="flex justify-between">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                  <div className="flex justify-between">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                </div>
+                <div className="pt-4 border-t border-gray-100">
+                  <div className="flex justify-between items-center">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-6 w-16" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     );
@@ -970,8 +1021,8 @@ export default function FeeStructureManager() {
                       {structure.blocks?.van?.map((block, index) => (
                         <div key={index} className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
                           <h4 className="font-semibold mb-3 capitalize text-gray-900 flex items-center gap-2">
-                            <div className={`w-3 h-3 rounded-full ${block.density === 'high' ? 'bg-green-500' :
-                              block.density === 'medium' ? 'bg-yellow-500' : 'bg-orange-500'
+                            <div className={`w-3 h-3 rounded-full ${block.density === 'high' ? 'bg-brand-teal' :
+                              block.density === 'medium' ? 'bg-brand-yellow' : 'bg-brand-shadeYellow'
                               }`} />
                             {block.density} Density Block
                           </h4>

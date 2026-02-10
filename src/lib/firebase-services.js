@@ -42,7 +42,7 @@ export const authServices = {
       // This allows checking email before authentication
       const checkFountainEmail = httpsCallable(functions, 'checkFountainEmail');
       const result = await checkFountainEmail({ email });
-      
+
       if (result.data.exists) {
         return {
           exists: true,
@@ -73,20 +73,20 @@ export const authServices = {
         // Store email in localStorage BEFORE sign-in (for use by onAuthStateChanged)
         // This ensures email is available even if Firebase user.email is null
         localStorage.setItem('driver_email', email);
-        
+
         // Create custom token for Firebase authentication first
         const createCustomToken = httpsCallable(functions, 'createCustomToken');
         const tokenResult = await createCustomToken({ email });
-        
+
         if (tokenResult.data.success && tokenResult.data.customToken) {
           // Sign in with the custom token
           await signInWithCustomToken(auth, tokenResult.data.customToken);
-          
+
           // Save token to cookie for session persistence
           saveAuthToken(tokenResult.data.customToken);
           // Note: User creation is now handled by createCustomToken cloud function
           // (uses admin privileges, so no permission issues)
-          
+
           return {
             success: true,
             applicant: result.data.applicant,
@@ -106,13 +106,13 @@ export const authServices = {
       };
     } catch (error) {
       console.error('Error verifying phone number:', error);
-      
+
       // Handle specific error cases
       let errorMessage = 'Unable to verify phone number. Please try again.';
       if (error.message) {
         errorMessage = error.message;
       }
-      
+
       return {
         success: false,
         message: errorMessage,
@@ -163,7 +163,7 @@ export const authServices = {
       return false;
     }
   },
-  
+
   // Check if session cookie exists (Firebase Auth handles actual session persistence)
   // Custom tokens are single-use, so we can't reuse them, but Firebase maintains the session
   // This is just a flag check - Firebase Auth will restore the session automatically
@@ -196,7 +196,7 @@ export const driverServices = {
         ...validation.data,
         updatedAt: serverTimestamp(),
       }, { merge: true });
-      
+
       return true;
     } catch (error) {
       console.error('❌ Error updating personal details:', error);
@@ -221,7 +221,7 @@ export const driverServices = {
 
       // Check if availability has at least one day with some availability
       const hasAvailability = Object.values(availability).some(day =>
-        day && (day.noon || day.evening)
+        day && (day.morning || day.noon || day.evening)
       );
 
       if (!hasAvailability) {
@@ -275,7 +275,7 @@ export const driverServices = {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       }, { merge: true });
-      
+
       return true;
     } catch (error) {
       console.error('❌ Error saving verification:', error);
@@ -291,26 +291,26 @@ export const driverServices = {
       if (!email || typeof email !== 'string') {
         return null;
       }
-      
+
       const userRef = doc(db, COLLECTIONS.DRIVERS, email);
       const userDoc = await getDoc(userRef);
 
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        
+
         // Check if fountainData needs to be enriched with full webhook structure
-        const needsEnrichment = userData.fountainData && 
-          (!userData.fountainData.data) && 
+        const needsEnrichment = userData.fountainData &&
+          (!userData.fountainData.data) &&
           (!userData.fountainData.applicant);
-        
+
         if (needsEnrichment) {
           try {
             const fountainApplicantRef = doc(db, COLLECTIONS.FOUNTAIN_APPLICANTS, email);
             const fountainApplicantDoc = await getDoc(fountainApplicantRef);
-            
+
             if (fountainApplicantDoc.exists()) {
               const fountainApplicantData = fountainApplicantDoc.data();
-              
+
               // Merge the full fountainData if available
               if (fountainApplicantData.fountainData) {
                 // Deep merge to preserve nested structures
@@ -337,7 +337,7 @@ export const driverServices = {
                     }
                   })
                 };
-                
+
                 // Save enriched fountainData back to Firestore so it persists
                 // This prevents needing to fetch and merge on every getDriverData call
                 // Use setDoc with merge to handle complex nested structures
@@ -358,7 +358,7 @@ export const driverServices = {
             // Continue with existing data
           }
         }
-        
+
         return userData;
       }
       return null;
@@ -375,7 +375,7 @@ export const driverServices = {
       if (!email || typeof email !== 'string') {
         return null;
       }
-      
+
       const availabilityRef = doc(db, COLLECTIONS.AVAILABILITY, email);
       const availabilityDoc = await getDoc(availabilityRef);
 
@@ -396,7 +396,7 @@ export const driverServices = {
       if (!email || typeof email !== 'string') {
         return null;
       }
-      
+
       const verificationRef = doc(db, COLLECTIONS.VERIFICATION, email);
       const verificationDoc = await getDoc(verificationRef);
 
@@ -566,25 +566,25 @@ export const feeStructureServices = {
 
       // Normalize city name for consistent lookups
       const normalizedCity = city.toLowerCase().trim();
-      
+
       const feeStructureRef = doc(db, COLLECTIONS.FEE_STRUCTURES, normalizedCity);
       const feeStructureDoc = await getDoc(feeStructureRef);
 
       if (feeStructureDoc.exists()) {
         const feeStructure = feeStructureDoc.data();
-        
+
         // If it's a vehicle-specific fee structure, return the appropriate vehicle type blocks
         if (feeStructure.feeType === 'vehicle-specific') {
           if (!vehicleType) {
             // If vehicle type not provided, default to car
             vehicleType = 'car';
           }
-          
+
           // Validate that vehicle-specific blocks exist
           if (!feeStructure.blocks || typeof feeStructure.blocks !== 'object') {
             return null;
           }
-          
+
           // Return structure with appropriate vehicle-specific blocks
           if (feeStructure.blocks[vehicleType] && Array.isArray(feeStructure.blocks[vehicleType]) && feeStructure.blocks[vehicleType].length > 0) {
             return {
@@ -609,11 +609,11 @@ export const feeStructureServices = {
             }
           }
         }
-        
+
         // For general fee structures or backward compatibility, return as-is
         return feeStructure;
       }
-      
+
       return null;
     } catch (error) {
       console.error('Error getting fee structures:', error);
@@ -644,13 +644,13 @@ export const feeStructureServices = {
     try {
       const normalizedCity = city.toLowerCase().trim();
       const feeStructureRef = doc(db, COLLECTIONS.FEE_STRUCTURES, normalizedCity);
-      
+
       await setDoc(feeStructureRef, {
         city: city,
         ...feeStructureData,
         updatedAt: serverTimestamp(),
       }, { merge: true });
-      
+
       return true;
     } catch (error) {
       console.error('Error setting fee structure:', error);
@@ -670,7 +670,7 @@ export const facilityServices = {
 
       // Normalize city name for consistent lookups
       const normalizedCity = city.toLowerCase().trim();
-      
+
       // Fetch all facilities and filter by city (case-insensitive)
       // Firestore doesn't support case-insensitive queries directly
       const facilitiesRef = collection(db, COLLECTIONS.FACILITIES);

@@ -18,7 +18,7 @@ const ROLE_CONFIG = {
     label: 'Super Admin',
     description: 'Can create, edit, and manage everything including admins',
     icon: ShieldCheck,
-    color: 'bg-indigo-100 text-indigo-800 border-indigo-200'
+    color: 'bg-brand-lightBlue text-brand-shadeBlue border-brand-blue'
   },
   app_admin: {
     label: 'App Admin',
@@ -393,7 +393,7 @@ export default function AdminManager() {
                         </SelectContent>
                       </Select>
                       {formData.role === 'super_admin' && (
-                        <p className="text-xs text-amber-600 mt-1">
+                        <p className="text-xs text-brand-shadeYellow mt-1">
                           ⚠️ Only one super admin is allowed. Creating a new super admin will replace the existing one.
                         </p>
                       )}

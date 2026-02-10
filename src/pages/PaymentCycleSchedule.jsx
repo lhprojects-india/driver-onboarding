@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { getPaymentCycleContent } from "../lib/paymentCycleConfig";
+import { getPaymentCycleContent, pageContent } from "@/data/page-content";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { acknowledgementServices } from "@/lib/firebase-services";
@@ -135,7 +135,7 @@ const PaymentCycleSchedule = () => {
           <div className="bg-gray-50 border border-gray-300 rounded-lg p-6 max-h-[500px] overflow-y-auto mb-6">
             <div className="text-left space-y-6 text-sm text-gray-900">
               <div>
-                <p className="font-semibold mb-3 text-base">Payment Cycle</p>
+                <p className="font-semibold mb-3 text-base">{pageContent.paymentCycleSchedule.sections.paymentCycle}</p>
                 <div className="ml-4 space-y-2">
                   {content.paymentCycle.text && (
                     <p>
@@ -158,7 +158,7 @@ const PaymentCycleSchedule = () => {
               </div>
 
               <div>
-                <p className="font-semibold mb-3 text-base">Scheduling</p>
+                <p className="font-semibold mb-3 text-base">{pageContent.paymentCycleSchedule.sections.scheduling}</p>
                 <div className="ml-4 space-y-2">
                   <p>
                     {content.scheduling.text}

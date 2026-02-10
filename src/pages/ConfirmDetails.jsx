@@ -12,10 +12,10 @@ const ConfirmDetails = () => {
   const { currentUser, updateUserData, isLoading } = useAuth();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
-  
+
   // Get data from Fountain (stored after phone verification)
   const fountainData = currentUser?.fountainData || {};
-  
+
   // State for display fields - pre-filled from Fountain data
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -103,7 +103,7 @@ const ConfirmDetails = () => {
           title: "Issue reported",
           description: "Your data conflict has been reported. Our team will review and contact you shortly.",
         });
-        
+
         // Navigate to a waiting/info page or stay on current page
         navigate("/introduction");
       }
@@ -156,7 +156,7 @@ const ConfirmDetails = () => {
               className="bg-gray-100 cursor-not-allowed"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-white mb-1">
               Phone Number <span className="text-red-500">*</span>
@@ -202,7 +202,7 @@ const ConfirmDetails = () => {
         <div className="w-full max-w-xs space-y-3 mt-6">
           <Button
             onClick={handleConfirm}
-            className="w-full bg-green-600 hover:bg-green-700"
+            className="w-full bg-brand-teal hover:bg-brand-shadeTeal"
             disabled={isProcessing || isLoading}
           >
             <CheckCircle size={18} />
@@ -212,7 +212,7 @@ const ConfirmDetails = () => {
           <Button
             onClick={handleReportIssue}
             variant="outline"
-            className="w-full border-orange-500 text-orange-600 hover:bg-orange-50"
+            className="w-full border-brand-yellow text-brand-shadeYellow hover:bg-brand-lightYellow"
             disabled={isProcessing || isLoading}
           >
             <AlertCircle size={18} />

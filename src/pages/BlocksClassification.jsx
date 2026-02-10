@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { pageContent } from "@/data/page-content";
 import PageLayout from "@/components/PageLayout";
 import Button from "@/components/Button";
 import { Button as UIButton } from "@/components/ui/button";
@@ -66,48 +67,46 @@ const BlocksClassification = () => {
     <PageLayout compact title="">
       <div className="w-full flex flex-col items-center">
         <h2 className="text-center text-3xl font-bold mb-6 animate-slide-down">
-          Block densities
+          {pageContent.blocksClassification.title}
         </h2>
 
         <div className="w-full max-w-md animate-fade-in">
           <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 max-h-[500px] overflow-y-auto mb-6">
             <div className="text-left space-y-4 text-sm text-gray-900">
-              <p>
-                Our fee structure is designed to ensure fair compensation for our partner drivers by basing fees on tasks completed rather than on hourly rates. To better accommodate varying workloads, blocks are classified into:
-              </p>
+              <p>{pageContent.blocksClassification.intro}</p>
 
               <table style={{ borderCollapse: 'collapse', width: '100%' }}>
                 <tbody>
                   <tr>
                     <td style={{ border: '1px solid black', padding: '8px', fontWeight: 'bold' }}>
-                      High Task Density
+                      {pageContent.blocksClassification.table.high.label}
                     </td>
                     <td style={{ border: '1px solid black', padding: '8px' }}>
-                      higher number of tasks with lower driving distance
+                      {pageContent.blocksClassification.table.high.desc}
                     </td>
                   </tr>
                   <tr>
                     <td style={{ border: '1px solid black', padding: '8px', fontWeight: 'bold' }}>
-                      Medium Task Density
+                      {pageContent.blocksClassification.table.medium.label}
                     </td>
                     <td style={{ border: '1px solid black', padding: '8px' }}>
-                      balanced route of tasks and distance
+                      {pageContent.blocksClassification.table.medium.desc}
                     </td>
                   </tr>
                   <tr>
                     <td style={{ border: '1px solid black', padding: '8px', fontWeight: 'bold' }}>
-                      Low Task Density
+                      {pageContent.blocksClassification.table.low.label}
                     </td>
                     <td style={{ border: '1px solid black', padding: '8px' }}>
-                      lower number of tasks and higher driving distance
+                      {pageContent.blocksClassification.table.low.desc}
                     </td>
                   </tr>
                 </tbody>
               </table>
 
-              <p>Each block attracts a different guaranteed fee, along with a minimum number of tasks that need to be completed and a fee for any additional tasks.
-              </p>
-              <p>All details of the fee can be viewed in the Laundryheap Driver Application.</p>
+              {pageContent.blocksClassification.footer.map((paragraph, index) => (
+                <p key={index}>{paragraph}</p>
+              ))}
             </div>
           </div>
 
