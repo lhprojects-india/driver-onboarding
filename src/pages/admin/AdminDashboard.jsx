@@ -21,26 +21,34 @@ import {
   DropdownMenuTrigger,
 } from "../../components/ui/dropdown-menu";
 import {
-  Users,
-  FileText,
-  Settings,
-  LogOut,
+  MoreHorizontal,
+  Search,
+  Filter,
+  Download,
+  Eye,
   CheckCircle,
   XCircle,
+  AlertTriangle,
   Clock,
+  Calendar,
+  MapPin,
+  FileText,
+  User,
+  Phone,
+  Mail,
+  Briefcase,
   Trash2,
+  Users,
+  ChevronRight,
+  Printer,
+  Settings,
+  LogOut,
   Edit,
   BarChart3,
   RefreshCw,
-  Eye,
-  Search,
-  Filter,
-  MapPin,
-  AlertTriangle,
   UserCheck,
-  PauseCircle,
-  MoreHorizontal
-} from "lucide-react";
+  PauseCircle
+} from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { getCurrentStage } from "../../lib/progress-tracking";
 import LaundryheapLogo from "../../assets/logo";
@@ -1130,6 +1138,15 @@ export default function AdminDashboard() {
                                     // Use existing report but enhance acknowledgements with timestamps if missing
                                     const enhancedAcknowledgements = {
                                       ...app.report.acknowledgements,
+                                      // Add boolean flags from live data (prioritize live over stale report)
+                                      role: app.roleUnderstood || app.roleAcknowledged || app?.progress_role?.confirmed || app.report.acknowledgements?.role || false,
+                                      blockClassification: app.blocksClassificationAcknowledged || app.report.acknowledgements?.blockClassification || false,
+                                      feeStructure: app.acknowledgedFeeStructure || app.feeStructureAcknowledged || app.report.acknowledgements?.feeStructure || false,
+                                      routesPolicy: app.routesPolicyAcknowledged || app.report.acknowledgements?.routesPolicy || false,
+                                      cancellationPolicy: app.acknowledgedCancellationPolicy || app.cancellationPolicyAcknowledged || app.report.acknowledgements?.cancellationPolicy || false,
+                                      liabilities: app.acknowledgedLiabilities || app?.progress_liabilities?.confirmed || app.report.acknowledgements?.liabilities || false,
+                                      paymentCycleSchedule: app.acknowledgedPaymentCycle || app.report.acknowledgements?.paymentCycleSchedule || false,
+
                                       // Add timestamp fields if they don't exist in the report
                                       roleDate: getTimestamp(
                                         app.report.acknowledgements?.roleDate,
@@ -1157,6 +1174,10 @@ export default function AdminDashboard() {
                                         app.report.acknowledgements?.liabilitiesDate,
                                         app.liabilitiesAcknowledgedAt,
                                         app?.progress_liabilities?.confirmedAt
+                                      ),
+                                      paymentCycleScheduleDate: getTimestamp(
+                                        app.report.acknowledgements?.paymentCycleScheduleDate,
+                                        app.paymentCycleAcknowledgedAt
                                       ),
                                     };
 
@@ -1515,17 +1536,33 @@ export default function AdminDashboard() {
                   {selectedReport?.driverEmail || selectedReport?.email || 'N/A'}
                 </DialogDescription>
               </div>
-              {selectedReport?.reportId ? (
-                <Badge className="bg-brand-lightTeal text-brand-shadeTeal border-brand-teal">
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                  Complete Report
-                </Badge>
-              ) : (
-                <Badge variant="secondary" className="bg-brand-lightBlue text-brand-shadeBlue border-brand-blue">
-                  <Eye className="h-3 w-3 mr-1" />
-                  Data Snapshot
-                </Badge>
-              )}
+              <div className="flex items-center gap-2">
+                {selectedReport?.reportId ? (
+                  <Badge className="bg-brand-lightTeal text-brand-shadeTeal border-brand-teal">
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Complete Report
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="bg-brand-lightBlue text-brand-shadeBlue border-brand-blue">
+                    <Eye className="h-3 w-3 mr-1" />
+                    Data Snapshot
+                  </Badge>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const email = selectedReport?.driverEmail || selectedReport?.email;
+                    if (email) {
+                      window.open(`/admin/print-report/${encodeURIComponent(email)}`, '_blank');
+                    }
+                  }}
+                  className="ml-2 gap-2"
+                >
+                  <Printer className="h-4 w-4" />
+                  Export
+                </Button>
+              </div>
             </div>
           </DialogHeader>
 
@@ -1813,6 +1850,7 @@ export default function AdminDashboard() {
                           role: 'Driver Role',
                           blockClassification: 'Block Densities',
                           feeStructure: 'Fee Structure',
+                          paymentCycleSchedule: 'Payment Cycle & Schedule',
                           routesPolicy: 'Routes & Task Addition',
                           cancellationPolicy: 'Cancellation Policy',
                           liabilities: 'Liabilities'
@@ -1823,19 +1861,20 @@ export default function AdminDashboard() {
                           role: 'roleDate',
                           blockClassification: 'blockClassificationDate',
                           feeStructure: 'feeStructureDate',
+                          paymentCycleSchedule: 'paymentCycleScheduleDate',
                           routesPolicy: 'routesPolicyDate',
                           cancellationPolicy: 'cancellationPolicyDate',
                           liabilities: 'liabilitiesDate'
                         };
 
-                        // Filter to only show acknowledgement status fields (not date fields)
-                        const acknowledgementEntries = Object.entries(selectedReport.acknowledgements).filter(([key]) =>
-                          !key.toLowerCase().includes('date') && !key.toLowerCase().includes('at')
-                        );
+                        // Use the labels keys to drive the display order and ensure all items are shown
+                        // even if they are missing from the acknowledgement data
+                        const acknowledgementKeys = Object.keys(labels);
 
-                        return acknowledgementEntries.map(([key, value]) => {
+                        return acknowledgementKeys.map((key) => {
+                          const value = selectedReport.acknowledgements?.[key];
                           const dateField = dateFields[key];
-                          const timestamp = selectedReport.acknowledgements[dateField];
+                          const timestamp = selectedReport.acknowledgements?.[dateField];
 
                           return (
                             <div key={key} className="flex items-center justify-between p-3 rounded-lg border bg-gray-50">

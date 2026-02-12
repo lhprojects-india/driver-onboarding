@@ -93,6 +93,7 @@
     from {
       opacity: 0;
     }
+
     to {
       opacity: 1;
     }
@@ -220,9 +221,9 @@
     align-items: center;
     gap: 0.5rem;
   }
-  
+
   /* Ensure PhoneInputCountry is visible and shows flag */
-  .phone-input-wrapper > .PhoneInputCountry {
+  .phone-input-wrapper>.PhoneInputCountry {
     display: flex !important;
     visibility: visible !important;
   }
@@ -250,7 +251,7 @@
     gap: 0.5rem !important;
   }
 
-  .phone-input-wrapper .PhoneInputCountrySelect > * {
+  .phone-input-wrapper .PhoneInputCountrySelect>* {
     text-align: left !important;
     justify-content: flex-start !important;
   }
@@ -270,7 +271,7 @@
     align-items: center !important;
     justify-content: center !important;
   }
-  
+
   .phone-input-wrapper .PhoneInputCountryIcon--square {
     display: inline-block !important;
     visibility: visible !important;
@@ -310,7 +311,7 @@
     width: 100% !important;
     height: 100% !important;
   }
-  
+
   /* Ensure flag icon container in country selector is visible */
   .phone-input-wrapper .PhoneInputCountrySelect .PhoneInputCountryIcon {
     display: inline-block !important;
@@ -321,7 +322,7 @@
     height: 1.2em !important;
     flex-shrink: 0 !important;
   }
-  
+
   /* Ensure flag image inside country selector is visible */
   .phone-input-wrapper .PhoneInputCountrySelect .PhoneInputCountryIcon img,
   .phone-input-wrapper .PhoneInputCountrySelect .PhoneInputCountryIconImg {
@@ -332,7 +333,7 @@
     height: 100% !important;
     object-fit: contain !important;
   }
-  
+
   /* Ensure the country selector shows the flag */
   .phone-input-wrapper .PhoneInputCountrySelect::before {
     content: '';
@@ -351,5 +352,131 @@
 
   .phone-number-input {
     @apply text-center;
+  }
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+
+  body {
+    visibility: hidden;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  /* Ensure the dialog content is visible OR the dedicated print page */
+  [role="dialog"],
+  [role="dialog"] *,
+  .printable-report-container,
+  .printable-report-container * {
+    visibility: visible;
+  }
+
+  /* Reset the dialog container to standard document flow */
+  div[role="dialog"],
+  div[data-state="open"] {
+    position: static !important;
+    transform: none !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    inset: auto !important;
+  }
+
+  /* Hide the overlay/backdrop */
+  [data-radix-dialog-overlay] {
+    display: none !important;
+  }
+
+  /* Target the content wrapper inside the dialog */
+  [role="dialog"]>div,
+  [data-radix-dialog-content] {
+    position: static !important;
+    transform: none !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Hide close button and other non-printable elements */
+  button[type="button"],
+  .print-hide {
+    display: none !important;
+  }
+
+  /* Style headings for print */
+  h2,
+  h3,
+  .text-lg,
+  .text-xl {
+    color: black !important;
+    page-break-after: avoid;
+  }
+
+  /* Reset grid layouts to simple block or flex for print consistency */
+  .grid {
+    display: block !important;
+  }
+
+  /* For 2-column grids, make them flex row with wrap */
+  .grid-cols-2 {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 1rem !important;
+  }
+
+  .grid-cols-2>* {
+    width: 48% !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  /* Reset cards to be simple bordered blocks */
+  .card,
+  .rounded-lg,
+  .border {
+    border: 1px solid #ddd !important;
+    box-shadow: none !important;
+    border-radius: 4px !important;
+    margin-bottom: 1rem !important;
+    break-inside: avoid !important;
+  }
+
+  /* Ensure text is black */
+  p,
+  span,
+  div {
+    color: black !important;
+  }
+
+  /* Keep badges visible but with print-safe colors */
+  .badge,
+  [class*="badge"] {
+    border: 1px solid #ddd !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* Links */
+  a {
+    text-decoration: none !important;
+    color: black !important;
   }
 }

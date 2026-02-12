@@ -8,9 +8,27 @@ import { useSaveProgress } from "@/hooks/useSaveProgress";
 
 const Availability = () => {
   const navigate = useNavigate();
-  const { currentUser, saveAvailability, isLoading } = useAuth();
+  const { currentUser, saveAvailability, isLoading, isAuthenticated } = useAuth();
   useSaveProgress(); // Automatically save progress when user visits this page
   const [isSaving, setIsSaving] = useState(false);
+
+  // Debug logging
+  useEffect(() => {
+    console.log("Availability Page: Mount/Update", {
+      isLoading,
+      isAuthenticated,
+      hasCurrentUser: !!currentUser,
+      email: currentUser?.email
+    });
+  }, [isLoading, isAuthenticated, currentUser]);
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated && !currentUser?.email) {
+      console.log("Availability Page: No auth, redirecting to welcome");
+      // navigate("/", { replace: true }); // Commented out for now to allow viewing logs
+    }
+  }, [isLoading, isAuthenticated, currentUser, navigate]);
 
   const [availability, setAvailability] = useState({
     Mondays: { morning: false, noon: false, evening: false },
@@ -65,7 +83,7 @@ const Availability = () => {
 
         <div className="w-full max-w-lg animate-fade-in">
           <p className="text-center mb-6">
-            We offer our blocks in 3 windows: 8 AM - 12 PM, 12 PM - 5 PM, and 5 PM - 11 PM. We are operational 7 days a week.
+            We offer our blocks in 3 windows: 8 AM - 12 PM, 12 PM - 5 PM, and 5 PM - 10 PM. We are operational 7 days a week.
           </p>
 
           <p className="text-center mb-6">

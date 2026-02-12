@@ -181,7 +181,7 @@ const CancellationPolicy = () => {
                       {pageContent.cancellationPolicy.rules.fortyEightHour.standard}
                     </p>
                   )}
-                  <p className="pt-2 ml-4 text-sm italic">
+                  <p className="pt-2 ml-4 text-sm font-bold">
                     {pageContent.cancellationPolicy.rules.fortyEightHour.note}
                   </p>
                 </div>

@@ -62,18 +62,18 @@ export function getNextRoute(userData) {
   // Check acknowledgements summary - only after liabilities is confirmed
   if (userData.progress_liabilities?.confirmed === true) {
     // Check if all acknowledgements are done (all must be explicitly true)
-    const hasLiabilities = userData.progress_liabilities?.confirmed === true || 
-                          userData.acknowledgedLiabilities === true;
+    const hasLiabilities = userData.progress_liabilities?.confirmed === true ||
+      userData.acknowledgedLiabilities === true;
     const hasBlocksClassification = userData.blocksClassificationAcknowledged === true;
-    const hasFeeStructure = userData.feeStructureAcknowledged === true || 
-                           userData.acknowledgedFeeStructure === true;
+    const hasFeeStructure = userData.feeStructureAcknowledged === true ||
+      userData.acknowledgedFeeStructure === true;
     const hasRoutesPolicy = userData.routesPolicyAcknowledged === true;
-    const hasCancellationPolicy = userData.cancellationPolicyAcknowledged === true || 
-                                  userData.acknowledgedCancellationPolicy === true;
+    const hasCancellationPolicy = userData.cancellationPolicyAcknowledged === true ||
+      userData.acknowledgedCancellationPolicy === true;
     const hasSmokingFitness = userData.progress_smoking_fitness_check?.confirmed === true;
-    
-    if (hasLiabilities && hasBlocksClassification && hasFeeStructure && 
-        hasRoutesPolicy && hasCancellationPolicy && hasSmokingFitness) {
+
+    if (hasLiabilities && hasBlocksClassification && hasFeeStructure &&
+      hasRoutesPolicy && hasCancellationPolicy && hasSmokingFitness) {
       return '/acknowledgements-summary';
     }
   }
@@ -86,33 +86,33 @@ export function getNextRoute(userData) {
 
   // Check smoking fitness check (after cancellation policy)
   if (userData.progress_cancellation_policy?.confirmed === true ||
-      userData.cancellationPolicyAcknowledged === true || 
-      userData.acknowledgedCancellationPolicy === true) {
+    userData.cancellationPolicyAcknowledged === true ||
+    userData.acknowledgedCancellationPolicy === true) {
     return '/smoking-fitness-check';
   }
 
   // Check cancellation policy (after routes policy)
-  if (userData.progress_routes_policy?.confirmed === true || 
-      userData.routesPolicyAcknowledged === true) {
+  if (userData.progress_routes_policy?.confirmed === true ||
+    userData.routesPolicyAcknowledged === true) {
     return '/cancellation-policy';
   }
 
   // Check routes policy (after fee structure)
-  if (userData.progress_fee_structure?.confirmed === true || 
-      userData.feeStructureAcknowledged === true || 
-      userData.acknowledgedFeeStructure === true) {
+  if (userData.progress_fee_structure?.confirmed === true ||
+    userData.feeStructureAcknowledged === true ||
+    userData.acknowledgedFeeStructure === true) {
     return '/how-route-works';
   }
 
   // Check fee structure (after blocks classification)
-  if (userData.progress_blocks_classification?.confirmed === true || 
-      userData.blocksClassificationAcknowledged === true) {
+  if (userData.progress_blocks_classification?.confirmed === true ||
+    userData.blocksClassificationAcknowledged === true) {
     return '/fee-structure';
   }
 
   // Check blocks classification (after facility locations)
-  if (userData.progress_facility_locations?.confirmed === true || 
-      userData.facilityLocationsAcknowledged === true) {
+  if (userData.progress_facility_locations?.confirmed === true ||
+    userData.facilityLocationsAcknowledged === true) {
     return '/blocks-classification';
   }
 
@@ -123,20 +123,20 @@ export function getNextRoute(userData) {
   }
 
   // Check availability (after role)
-  if (userData.progress_role?.confirmed === true || 
-      userData.roleAcknowledged === true) {
+  if (userData.progress_role?.confirmed === true ||
+    userData.roleAcknowledged === true) {
     return '/availability';
   }
 
   // Check role (after about)
-  if (userData.progress_about?.confirmed === true || 
-      userData.aboutAcknowledged === true) {
+  if (userData.progress_about?.confirmed === true ||
+    userData.aboutAcknowledged === true) {
     return '/role';
   }
 
   // Check about (after introduction)
-  if (userData.progress_introduction?.confirmed === true || 
-      userData.introductionAcknowledged === true) {
+  if (userData.progress_introduction?.confirmed === true ||
+    userData.introductionAcknowledged === true) {
     return '/about';
   }
 
@@ -159,9 +159,9 @@ export function getNextRoute(userData) {
 
   // If no specific progress found but user has a lastRoute saved, use it as fallback
   // BUT: Only use lastRoute if onboarding is not completed
-  if (userData.onboardingStatus !== 'completed' && 
-      userData.lastRoute && 
-      ONBOARDING_ROUTES.includes(userData.lastRoute)) {
+  if (userData.onboardingStatus !== 'completed' &&
+    userData.lastRoute &&
+    ONBOARDING_ROUTES.includes(userData.lastRoute)) {
     return userData.lastRoute;
   }
 
@@ -237,7 +237,7 @@ export function getCurrentStage(userData) {
  */
 export async function saveCurrentRoute(userEmail, route, driverServices) {
   if (!userEmail || !driverServices) return;
-  
+
   try {
     await driverServices.updatePersonalDetails(userEmail, {
       lastRoute: route,
@@ -248,3 +248,62 @@ export async function saveCurrentRoute(userEmail, route, driverServices) {
   }
 }
 
+
+/**
+ * Local Storage Keys
+ */
+export const STORAGE_KEYS = {
+  EMAIL: 'driver_email',
+  FOUNTAIN_DATA: 'driver_fountainData',
+};
+
+/**
+ * Saves driver data to local storage for session persistence
+ * Helps maintain state across page refreshes
+ */
+export function saveLocalDriverData(data) {
+  if (typeof window === 'undefined') return;
+
+  const { email, fountainData } = data;
+
+  if (email) {
+    localStorage.setItem(STORAGE_KEYS.EMAIL, email);
+  }
+
+  if (fountainData) {
+    localStorage.setItem(STORAGE_KEYS.FOUNTAIN_DATA, JSON.stringify(fountainData));
+  }
+}
+
+/**
+ * Retrieves driver data from local storage
+ * Used to restore session on page refresh
+ */
+export function getLocalDriverData() {
+  if (typeof window === 'undefined') return { email: null, fountainData: null };
+
+  const email = localStorage.getItem(STORAGE_KEYS.EMAIL);
+  const fountainDataStr = localStorage.getItem(STORAGE_KEYS.FOUNTAIN_DATA);
+
+  let fountainData = null;
+  try {
+    if (fountainDataStr) {
+      fountainData = JSON.parse(fountainDataStr);
+    }
+  } catch (error) {
+    console.error('Error parsing local fountain data:', error);
+  }
+
+  return { email, fountainData };
+}
+
+/**
+ * Clears driver data from local storage
+ * Used on logout
+ */
+export function clearLocalDriverData() {
+  if (typeof window === 'undefined') return;
+
+  localStorage.removeItem(STORAGE_KEYS.EMAIL);
+  localStorage.removeItem(STORAGE_KEYS.FOUNTAIN_DATA);
+}

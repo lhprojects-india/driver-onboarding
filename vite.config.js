@@ -27,15 +27,26 @@ export default defineConfig(({ mode }) => ({
     sourcemap: false,
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Split Firebase into separate chunks
-          'firebase-auth': ['firebase/auth'],
-          'firebase-firestore': ['firebase/firestore'],
-          'firebase-functions': ['firebase/functions'],
-          'firebase-app': ['firebase/app'],
-          // Split vendor libraries
-          'react-vendor': ['react', 'react-dom'],
-          'lucide-react': ['lucide-react'],
+        manualChunks: (id) => {
+          // Only process node_modules to avoid source file issues
+          if (id.includes('node_modules')) {
+            // Firebase chunks
+            if (id.includes('firebase/auth')) return 'firebase-auth';
+            if (id.includes('firebase/firestore')) return 'firebase-firestore';
+            if (id.includes('firebase/functions')) return 'firebase-functions';
+            if (id.includes('firebase/app')) return 'firebase-app';
+
+            // Keep all React-dependent libraries together to avoid circular deps
+            // (react-router-dom, react-hook-form, react-query all depend on React)
+
+            // UI libraries
+            if (id.includes('@radix-ui')) return 'radix-ui';
+            if (id.includes('lucide-react')) return 'lucide-react';
+
+            // Recharts also depends on React, so it stays in main vendor chunk
+          }
+
+          // Let Vite handle source files and other modules automatically
         },
       },
     },

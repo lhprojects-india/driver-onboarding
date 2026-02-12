@@ -16,13 +16,13 @@ export const pageContent = {
             },
             example: {
                 title: "Example",
-                blockDate: "Block Date: 16th January at 5:00 PM ({currency}100)",
+                blockDate: "Block Date: 16th January at 5:00 PM ({currency}50)",
                 standard: {
-                    releasedBefore: "Released before 14th January, 5:00 PM → {currency}10 charged as block release fee",
-                    releasedAfter: "Released after 14th January, 5:00 PM → {currency}100 charged as cancellation fee"
+                    releasedBefore: "Released before 14th January, 5:00 PM → {currency}5 charged as block release fee",
+                    releasedAfter: "Released after 14th January, 5:00 PM → {currency}50 charged as cancellation fee"
                 },
                 noReleaseFee: {
-                    releasedAfter: "Released after 14th January, 5:00 PM → {currency}100 charged as cancellation fee"
+                    releasedAfter: "Released after 14th January, 5:00 PM → {currency}50 charged as cancellation fee"
                 }
             },
             whyMatters: {
@@ -43,7 +43,7 @@ export const pageContent = {
                 "Even if there are fewer tasks on a given day, you'll still receive this full minimum amount.",
                 "If you complete more than the included number of tasks, you'll earn extra pay for each additional task — the busier it is, the more you earn.",
                 "Only successfully completed tasks count toward your pay. Tasks that are failed or not delivered/picked up are not paid.",
-                "Please be informed that the fee mentioned is inclusive of the mileage."
+                "<strong>Please be informed that the fee mentioned is inclusive of the mileage.</strong>"
             ]
         },
         examples: {

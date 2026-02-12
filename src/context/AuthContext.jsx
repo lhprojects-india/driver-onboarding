@@ -6,6 +6,7 @@ import { onAuthStateChanged, signInWithCustomToken } from "firebase/auth";
 import { auth, db } from "../lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { getAuthToken, clearAuthToken } from "../lib/cookie-utils";
+import { saveLocalDriverData, getLocalDriverData, clearLocalDriverData } from "../lib/progress-tracking";
 
 const AuthContext = createContext(undefined);
 
@@ -18,10 +19,10 @@ export function AuthProvider({ children }) {
   // Check if email is authorized admin (check admins collection in Firestore)
   const checkAdminAuthorization = async (email) => {
     if (!email) return false;
-    
+
     try {
       const normalizedEmail = email.toLowerCase().trim();
-      
+
       // Check admins collection (single source of truth)
       try {
         const admin = await adminServices.getAdminByEmail(normalizedEmail);
@@ -31,7 +32,7 @@ export function AuthProvider({ children }) {
       } catch (firestoreError) {
         // Could not check admins collection
       }
-      
+
       return false;
     } catch (error) {
       console.error('Error checking admin authorization:', error);
@@ -46,12 +47,18 @@ export function AuthProvider({ children }) {
     // Custom tokens are single-use, so we rely on Firebase's built-in session persistence
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log("AuthContext: onAuthStateChanged triggered", {
+        uid: firebaseUser?.uid,
+        email: firebaseUser?.email,
+        isAnonymous: firebaseUser?.isAnonymous
+      });
+
       // CRITICAL: Don't process driver authentication if on admin routes
       // Admin routes are handled by AdminAuthContext
       // Check on mount only, not on every navigation
       const currentPath = window.location.pathname;
       const isAdminRoute = currentPath && currentPath.startsWith('/admin');
-      
+
       if (isAdminRoute) {
         // On admin route - don't interfere with admin authentication
         setIsLoading(false);
@@ -65,7 +72,7 @@ export function AuthProvider({ children }) {
         // Get email from multiple sources (user object, token claims, or localStorage)
         // Custom tokens may not have email in user.email, check token claims
         let userEmail = firebaseUser.email;
-        
+
         // Try to extract email from token claims if user.email is null
         if (!userEmail) {
           try {
@@ -75,12 +82,13 @@ export function AuthProvider({ children }) {
             // Silently handle token error
           }
         }
-        
+
         // Fallback: Get email from localStorage (stored after phone verification)
         if (!userEmail) {
-          userEmail = localStorage.getItem('driver_email');
+          const { email } = getLocalDriverData();
+          userEmail = email;
         }
-        
+
         // If still no email, try to extract from uid (uid format: driver_email_normalized)
         if (!userEmail && firebaseUser.uid) {
           const uidMatch = firebaseUser.uid.match(/^driver_(.+)$/);
@@ -91,24 +99,24 @@ export function AuthProvider({ children }) {
             // Or we can store email->uid mapping somewhere
           }
         }
-        
+
         // If still no email, we can't proceed
         if (!userEmail) {
           // Don't sign out immediately - wait a bit for localStorage to be set
           // The email might be set by verifyPhone function
           setTimeout(async () => {
-            const retryEmail = localStorage.getItem('driver_email');
+            const { email: retryEmail } = getLocalDriverData();
             if (!retryEmail) {
               await authServices.signOut();
               setIsAuthenticated(false);
               setCurrentUser(null);
             }
           }, 1000);
-          
+
           setIsLoading(false);
           return;
         }
-        
+
         // Email found - keep it in localStorage for now (will be cleaned up later)
         // Don't remove it yet in case onAuthStateChanged fires again
 
@@ -123,7 +131,7 @@ export function AuthProvider({ children }) {
 
         // Load user data from Firestore
         const userData = await driverServices.getDriverData(userEmail);
-        
+
         // If onboarding is completed, sign out the user automatically
         // They should start fresh if they want to go through onboarding again
         // BUT: Don't sign out if user is an admin (already checked above, but double-check)
@@ -135,13 +143,13 @@ export function AuthProvider({ children }) {
           setIsLoading(false);
           return;
         }
-        
+
         // Load availability and verification data from separate collections
         const [availabilityData, verificationData] = await Promise.all([
           driverServices.getAvailability(userEmail),
           driverServices.getVerification(userEmail),
         ]);
-        
+
         if (userData) {
           setCurrentUser({
             email: userEmail,
@@ -184,43 +192,93 @@ export function AuthProvider({ children }) {
   // Restore email and fountainData from localStorage and re-authenticate if needed
   useEffect(() => {
     const restoreSession = async () => {
+      // CRITICAL: Don't attempt to restore driver session if on admin routes
+      // Admin routes are handled by AdminAuthContext
+      const currentPath = window.location.pathname;
+      if (currentPath && currentPath.startsWith('/admin')) {
+        return;
+      }
+
+      console.log("AuthContext: Attempting to restore session", { isLoading, hasCurrentUser: !!currentUser, isAuthenticated });
       // Only restore if we don't have currentUser and we're not loading
+
       if (!isLoading && !currentUser && !isAuthenticated) {
-        const storedEmail = localStorage.getItem('driver_email');
-        const storedFountainData = localStorage.getItem('driver_fountainData');
+        const { email: storedEmail, fountainData: storedFountainData } = getLocalDriverData();
         const storedToken = getAuthToken();
-        
-        if (storedEmail && storedFountainData) {
+
+        if (storedEmail) {
           try {
-            const fountainData = JSON.parse(storedFountainData);
-            
-            // Try to re-authenticate with stored token if available
+            // 1. Try to re-authenticate with Firebase Auth if token exists
             if (storedToken) {
               try {
                 await signInWithCustomToken(auth, storedToken);
                 // onAuthStateChanged will handle setting the user data
                 return;
               } catch (reAuthError) {
+                console.warn("Re-auth failed, continuing with manual restoration:", reAuthError);
                 clearAuthToken();
-                // Continue to restore user data without Firebase auth
               }
             }
-            
-            // If no token or re-auth failed, just restore the user data
-            setCurrentUser({
-              email: storedEmail,
-              fountainData: fountainData
-            });
-            // Mark as authenticated if we have valid user data
-            // This handles cases where Firebase Auth loses the session but we have valid data
-            setIsAuthenticated(true);
+
+            // 2. Manual Restoration: Fetch data from Firestore
+            // We trust the stored email because it was saved after successful verification
+            console.log("Restoring session for:", storedEmail);
+
+            // Load user data from Firestore
+            const userData = await driverServices.getDriverData(storedEmail);
+
+            // If user exists in Firestore, fetch all related data
+            if (userData) {
+              // Load availability and verification in parallel
+              const [availabilityData, verificationData] = await Promise.all([
+                driverServices.getAvailability(storedEmail),
+                driverServices.getVerification(storedEmail),
+              ]);
+
+              // Construct full user object
+              const restoredUser = {
+                email: storedEmail,
+                ...userData,
+                // Merge availability and verification data
+                ...(availabilityData?.availability && { availability: availabilityData.availability }),
+                ...(verificationData && {
+                  vehicle: verificationData.vehicle,
+                  licensePlate: verificationData.licensePlate,
+                  address: verificationData.address,
+                  city: verificationData.city,
+                }),
+              };
+
+              // Restore fountainData from local storage if missing in Firestore 
+              // (e.g. if user hasn't completed phone verification yet but has email)
+              if (storedFountainData && !restoredUser.fountainData) {
+                restoredUser.fountainData = storedFountainData;
+              }
+
+              setCurrentUser(restoredUser);
+              setIsAuthenticated(true);
+            } else {
+              // User not in Firestore yet (e.g. just verified email but not phone)
+              // Restore just the local state
+              if (storedFountainData) {
+                // storedFountainData is already an object from getLocalDriverData
+                setCurrentUser({
+                  email: storedEmail,
+                  fountainData: storedFountainData
+                });
+                // We don't set isAuthenticated=true here because they haven't verified phone/created firestore doc yet
+                // But we DO set currentUser so they can see the correct screen (e.g. Verify Phone)
+              }
+            }
+
           } catch (e) {
-            // Failed to restore session from localStorage
+            console.error("Failed to restore session:", e);
+            // Failed to restore session
           }
         }
       }
     };
-    
+
     restoreSession();
   }, [isLoading, currentUser, isAuthenticated]);
 
@@ -231,8 +289,8 @@ export function AuthProvider({ children }) {
       const result = await authServices.checkFountainApplicant(email);
       if (result.exists) {
         // Store email and fountain applicant data (including phone) for later phone match
-        const userData = { 
-          email, 
+        const userData = {
+          email,
           fountainData: {
             phone: result.phone,
             name: result.name,
@@ -243,11 +301,13 @@ export function AuthProvider({ children }) {
           }
         };
         setCurrentUser(userData);
-        
+
         // Persist to localStorage so it survives page refresh/navigation
-        localStorage.setItem('driver_email', email);
-        localStorage.setItem('driver_fountainData', JSON.stringify(userData.fountainData));
-        
+        saveLocalDriverData({
+          email,
+          fountainData: userData.fountainData
+        });
+
         toast({
           title: "Email verified",
           description: "Please enter your registered mobile number to continue.",
@@ -283,22 +343,19 @@ export function AuthProvider({ children }) {
     // Try to get email from currentUser, or restore from localStorage
     let emailToUse = currentUser?.email || currentUser?.fountainData?.email;
     let fountainDataToUse = currentUser?.fountainData;
-    
+
     // If currentUser doesn't have email, try to restore from localStorage
     if (!emailToUse) {
-      emailToUse = localStorage.getItem('driver_email');
-      const storedFountainData = localStorage.getItem('driver_fountainData');
-      if (storedFountainData) {
-        try {
-          fountainDataToUse = JSON.parse(storedFountainData);
-          // Restore currentUser state from localStorage
-          setCurrentUser({
-            email: emailToUse,
-            fountainData: fountainDataToUse
-          });
-        } catch (e) {
-          // Failed to parse stored fountainData
-        }
+      const { email, fountainData } = getLocalDriverData();
+      emailToUse = email;
+
+      if (fountainData) {
+        fountainDataToUse = fountainData;
+        // Restore currentUser state from localStorage
+        setCurrentUser({
+          email: emailToUse,
+          fountainData: fountainDataToUse
+        });
       }
     }
 
@@ -331,20 +388,20 @@ export function AuthProvider({ children }) {
     setIsLoading(true);
     try {
       // Store email in localStorage before verification (fallback if Firebase user.email is null)
-      localStorage.setItem('driver_email', emailToUse);
-      
+      saveLocalDriverData({ email: emailToUse });
+
       const result = await authServices.verifyPhoneNumber(emailToUse, phone);
       if (result.success) {
         // Store email in localStorage for use by onAuthStateChanged
         // This ensures email is available even if Firebase user.email is null
-        localStorage.setItem('driver_email', emailToUse);
-        
+        saveLocalDriverData({ email: emailToUse });
+
         // Prepare data to save to Firestore
         const dataToSave = {
           phoneVerified: true,
           progress_verify: { confirmed: true, confirmedAt: new Date().toISOString() }
         };
-        
+
         // Store Fountain applicant data in currentUser for later use
         if (result.applicant) {
           setCurrentUser(prev => ({
@@ -354,10 +411,10 @@ export function AuthProvider({ children }) {
             phoneVerified: true,
             progress_verify: { confirmed: true, confirmedAt: new Date().toISOString() }
           }));
-          
+
           // Save Fountain data to Firestore so it persists across auth state changes
           dataToSave.fountainData = result.applicant;
-          
+
           // Only include fields that have values (to avoid validation errors)
           if (result.applicant.name) {
             dataToSave.name = result.applicant.name;
@@ -379,10 +436,10 @@ export function AuthProvider({ children }) {
             progress_verify: { confirmed: true, confirmedAt: new Date().toISOString() }
           }));
         }
-        
+
         // Save phone verification status and Fountain data to Firestore
         await driverServices.updatePersonalDetails(emailToUse, dataToSave);
-        
+
         // Authentication successful, user data is already loaded by onAuthStateChanged
         toast({
           title: "Verification successful",
@@ -465,6 +522,11 @@ export function AuthProvider({ children }) {
 
   // Save availability data
   const saveAvailability = async (availability) => {
+    console.log("AuthContext: saveAvailability called", {
+      currentUser: currentUser,
+      email: currentUser?.email
+    });
+
     if (!currentUser?.email) {
       toast({
         title: "Authentication required",
@@ -568,13 +630,13 @@ export function AuthProvider({ children }) {
       if (success) {
         // Generate onboarding report
         const reportResult = await driverServices.generateReport(currentUser.email);
-        
-        setCurrentUser(prev => ({ 
-          ...prev, 
+
+        setCurrentUser(prev => ({
+          ...prev,
           onboardingStatus: 'completed',
-          reportId: reportResult.reportId 
+          reportId: reportResult.reportId
         }));
-        
+
         toast({
           title: "Onboarding completed",
           description: "Welcome to the Laundryheap driver team!",

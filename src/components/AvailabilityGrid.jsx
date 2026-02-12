@@ -20,7 +20,7 @@ function AvailabilityGrid({ availability, onAvailabilityChange }) {
         <div className="col-span-1"></div>
         <div className="col-span-1 text-center text-sm font-medium">8 - 12 PM</div>
         <div className="col-span-1 text-center text-sm font-medium">12 - 5 PM</div>
-        <div className="col-span-1 text-center text-sm font-medium">5 - 11 PM</div>
+        <div className="col-span-1 text-center text-sm font-medium">5 - 10 PM</div>
       </div>
 
       {DAYS_ORDER.map((day) => {
