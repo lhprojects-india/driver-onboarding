@@ -1145,7 +1145,7 @@ export default function AdminDashboard() {
                                       routesPolicy: app.routesPolicyAcknowledged || app.report.acknowledgements?.routesPolicy || false,
                                       cancellationPolicy: app.acknowledgedCancellationPolicy || app.cancellationPolicyAcknowledged || app.report.acknowledgements?.cancellationPolicy || false,
                                       liabilities: app.acknowledgedLiabilities || app?.progress_liabilities?.confirmed || app.report.acknowledgements?.liabilities || false,
-                                      paymentCycleSchedule: app.acknowledgedPaymentCycle || app.report.acknowledgements?.paymentCycleSchedule || false,
+                                      paymentCycleSchedule: app.acknowledgedPaymentCycleSchedule || app.paymentCycleScheduleAcknowledged || app.report.acknowledgements?.paymentCycleSchedule || false,
 
                                       // Add timestamp fields if they don't exist in the report
                                       roleDate: getTimestamp(
@@ -1177,7 +1177,7 @@ export default function AdminDashboard() {
                                       ),
                                       paymentCycleScheduleDate: getTimestamp(
                                         app.report.acknowledgements?.paymentCycleScheduleDate,
-                                        app.paymentCycleAcknowledgedAt
+                                        app.paymentCycleScheduleAcknowledgedAt
                                       ),
                                     };
 
@@ -1226,6 +1226,8 @@ export default function AdminDashboard() {
                                         cancellationPolicyDate: app.cancellationPolicyAcknowledgedAt || app.cancellationPolicyAcknowledgedAt?.toDate?.() || null,
                                         liabilities: app.acknowledgedLiabilities || app?.progress_liabilities?.confirmed || false,
                                         liabilitiesDate: app.liabilitiesAcknowledgedAt || app?.progress_liabilities?.confirmedAt || app?.progress_liabilities?.confirmedAt?.toDate?.() || null,
+                                        paymentCycleSchedule: app.acknowledgedPaymentCycleSchedule || app.paymentCycleScheduleAcknowledged || false,
+                                        paymentCycleScheduleDate: app.paymentCycleScheduleAcknowledgedAt || null,
                                       },
                                       healthAndSafety: {
                                         smokingStatus: app.smokingStatus || null,

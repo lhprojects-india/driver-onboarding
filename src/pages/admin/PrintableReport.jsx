@@ -76,8 +76,8 @@ const PrintableReport = () => {
                         cancellationPolicyDate: app.cancellationPolicyAcknowledgedAt || (app.cancellationPolicyAcknowledgedAt && typeof app.cancellationPolicyAcknowledgedAt.toDate === 'function' ? app.cancellationPolicyAcknowledgedAt.toDate() : null) || null,
                         liabilities: app.acknowledgedLiabilities || app?.progress_liabilities?.confirmed || false,
                         liabilitiesDate: app.liabilitiesAcknowledgedAt || app?.progress_liabilities?.confirmedAt || (app?.progress_liabilities?.confirmedAt && typeof app.progress_liabilities.confirmedAt.toDate === 'function' ? app.progress_liabilities.confirmedAt.toDate() : null) || null,
-                        paymentCycleSchedule: app.acknowledgedPaymentCycle || false, // Adding missing field based on logs
-                        paymentCycleScheduleDate: app.paymentCycleAcknowledgedAt || null
+                        paymentCycleSchedule: app.acknowledgedPaymentCycleSchedule || app.paymentCycleScheduleAcknowledged || false,
+                        paymentCycleScheduleDate: app.paymentCycleScheduleAcknowledgedAt || null
                     },
                     healthAndSafety: {
                         smokingStatus: app.smokingStatus || null,
